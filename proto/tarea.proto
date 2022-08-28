@@ -2,38 +2,38 @@ syntax = "proto3";
 
 package grpc;
 
-option go_package = "https://github.com/anibalox/distribuidosproyecto";
+option go_package = "github.com/anibalox/distribuidosproyecto";
 
 message AyudaReq{
-    int32 peticion = 1
+    int32 peticion = 1;
 }
 
 message AyudaResp{
     enum Disponibilidad{
-        NO = 0
-        SI = 1
+        NO = 0;
+        SI = 1;
     }
-    Disponibilidad disponibilidad = 1
+    Disponibilidad disponibilidad = 1;
 }
 
 message SituacionReq{
-    int32 peticion = 1
+    int32 peticion = 1;
 }
 
 message SituacionResp{
     enum Estado{
-        PELIGRO = 0
-        RESUELTO = 1
+        PELIGRO = 0;
+        RESUELTO = 1;
     }
-    Estado estado = 1
+    Estado estado = 1;
 }
 
 message FinalizacionReq{
-    int32 peticion = 1
+    int32 peticion = 1;
 }
 
 message FinalizacionResp{
-    int32 respuesta = 1
+    int32 respuesta = 1;
 
 }
 
