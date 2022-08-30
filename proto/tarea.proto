@@ -4,44 +4,15 @@ package grpc;
 
 option go_package = "github.com/anibalox/distribuidosproyecto";
 
-message AyudaReq{
-    int32 peticion = 1;
-}
-
-message AyudaResp{
-    enum Disponibilidad{
-        NO = 0;
-        SI = 1;
-    }
-    Disponibilidad disponibilidad = 1;
-}
-
 message SituacionReq{
     int32 peticion = 1;
 }
 
 message SituacionResp{
-    enum Estado{
-        PELIGRO = 0;
-        RESUELTO = 1;
-    }
-    Estado estado = 1;
+    int32 resuelta = 1;
+    string nro_escuadra = 2;
+    string nro_lab = 3;
 }
-
-message FinalizacionReq{
-    int32 peticion = 1;
-}
-
-message FinalizacionResp{
-    int32 respuesta = 1;
-
-}
-
-service CentralService {
-    rpc Ayuda(AyudaReq) returns (AyudaResp);
-}
-
-service LaboratorioService{
-    rpc PedirSituacion(SituacionReq) returns (SituacionResp);
-    rpc Finalizar(FinalizacionReq) returns (FinalizacionResp);
+service CentralService{
+    rpc AbrirComunicacion(stream SituacionResp) returns (stream SituacionReq);
 }

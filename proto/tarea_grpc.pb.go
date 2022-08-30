@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CentralServiceClient interface {
-	Ayuda(ctx context.Context, in *AyudaReq, opts ...grpc.CallOption) (*AyudaResp, error)
+	AbrirComunicacion(ctx context.Context, opts ...grpc.CallOption) (CentralService_AbrirComunicacionClient, error)
 }
 
 type centralServiceClient struct {
@@ -33,20 +33,42 @@ func NewCentralServiceClient(cc grpc.ClientConnInterface) CentralServiceClient {
 	return &centralServiceClient{cc}
 }
 
-func (c *centralServiceClient) Ayuda(ctx context.Context, in *AyudaReq, opts ...grpc.CallOption) (*AyudaResp, error) {
-	out := new(AyudaResp)
-	err := c.cc.Invoke(ctx, "/grpc.CentralService/Ayuda", in, out, opts...)
+func (c *centralServiceClient) AbrirComunicacion(ctx context.Context, opts ...grpc.CallOption) (CentralService_AbrirComunicacionClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CentralService_ServiceDesc.Streams[0], "/grpc.CentralService/AbrirComunicacion", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &centralServiceAbrirComunicacionClient{stream}
+	return x, nil
+}
+
+type CentralService_AbrirComunicacionClient interface {
+	Send(*SituacionResp) error
+	Recv() (*SituacionReq, error)
+	grpc.ClientStream
+}
+
+type centralServiceAbrirComunicacionClient struct {
+	grpc.ClientStream
+}
+
+func (x *centralServiceAbrirComunicacionClient) Send(m *SituacionResp) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *centralServiceAbrirComunicacionClient) Recv() (*SituacionReq, error) {
+	m := new(SituacionReq)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // CentralServiceServer is the server API for CentralService service.
 // All implementations must embed UnimplementedCentralServiceServer
 // for forward compatibility
 type CentralServiceServer interface {
-	Ayuda(context.Context, *AyudaReq) (*AyudaResp, error)
+	AbrirComunicacion(CentralService_AbrirComunicacionServer) error
 	mustEmbedUnimplementedCentralServiceServer()
 }
 
@@ -54,8 +76,8 @@ type CentralServiceServer interface {
 type UnimplementedCentralServiceServer struct {
 }
 
-func (UnimplementedCentralServiceServer) Ayuda(context.Context, *AyudaReq) (*AyudaResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Ayuda not implemented")
+func (UnimplementedCentralServiceServer) AbrirComunicacion(CentralService_AbrirComunicacionServer) error {
+	return status.Errorf(codes.Unimplemented, "method AbrirComunicacion not implemented")
 }
 func (UnimplementedCentralServiceServer) mustEmbedUnimplementedCentralServiceServer() {}
 
@@ -70,22 +92,30 @@ func RegisterCentralServiceServer(s grpc.ServiceRegistrar, srv CentralServiceSer
 	s.RegisterService(&CentralService_ServiceDesc, srv)
 }
 
-func _CentralService_Ayuda_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AyudaReq)
-	if err := dec(in); err != nil {
+func _CentralService_AbrirComunicacion_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CentralServiceServer).AbrirComunicacion(&centralServiceAbrirComunicacionServer{stream})
+}
+
+type CentralService_AbrirComunicacionServer interface {
+	Send(*SituacionReq) error
+	Recv() (*SituacionResp, error)
+	grpc.ServerStream
+}
+
+type centralServiceAbrirComunicacionServer struct {
+	grpc.ServerStream
+}
+
+func (x *centralServiceAbrirComunicacionServer) Send(m *SituacionReq) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *centralServiceAbrirComunicacionServer) Recv() (*SituacionResp, error) {
+	m := new(SituacionResp)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(CentralServiceServer).Ayuda(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/grpc.CentralService/Ayuda",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CentralServiceServer).Ayuda(ctx, req.(*AyudaReq))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // CentralService_ServiceDesc is the grpc.ServiceDesc for CentralService service.
@@ -94,134 +124,14 @@ func _CentralService_Ayuda_Handler(srv interface{}, ctx context.Context, dec fun
 var CentralService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "grpc.CentralService",
 	HandlerType: (*CentralServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Ayuda",
-			Handler:    _CentralService_Ayuda_Handler,
+			StreamName:    "AbrirComunicacion",
+			Handler:       _CentralService_AbrirComunicacion_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "tarea.proto",
-}
-
-// LaboratorioServiceClient is the client API for LaboratorioService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type LaboratorioServiceClient interface {
-	PedirSituacion(ctx context.Context, in *SituacionReq, opts ...grpc.CallOption) (*SituacionResp, error)
-	Finalizar(ctx context.Context, in *FinalizacionReq, opts ...grpc.CallOption) (*FinalizacionResp, error)
-}
-
-type laboratorioServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewLaboratorioServiceClient(cc grpc.ClientConnInterface) LaboratorioServiceClient {
-	return &laboratorioServiceClient{cc}
-}
-
-func (c *laboratorioServiceClient) PedirSituacion(ctx context.Context, in *SituacionReq, opts ...grpc.CallOption) (*SituacionResp, error) {
-	out := new(SituacionResp)
-	err := c.cc.Invoke(ctx, "/grpc.LaboratorioService/PedirSituacion", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *laboratorioServiceClient) Finalizar(ctx context.Context, in *FinalizacionReq, opts ...grpc.CallOption) (*FinalizacionResp, error) {
-	out := new(FinalizacionResp)
-	err := c.cc.Invoke(ctx, "/grpc.LaboratorioService/Finalizar", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// LaboratorioServiceServer is the server API for LaboratorioService service.
-// All implementations must embed UnimplementedLaboratorioServiceServer
-// for forward compatibility
-type LaboratorioServiceServer interface {
-	PedirSituacion(context.Context, *SituacionReq) (*SituacionResp, error)
-	Finalizar(context.Context, *FinalizacionReq) (*FinalizacionResp, error)
-	mustEmbedUnimplementedLaboratorioServiceServer()
-}
-
-// UnimplementedLaboratorioServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedLaboratorioServiceServer struct {
-}
-
-func (UnimplementedLaboratorioServiceServer) PedirSituacion(context.Context, *SituacionReq) (*SituacionResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PedirSituacion not implemented")
-}
-func (UnimplementedLaboratorioServiceServer) Finalizar(context.Context, *FinalizacionReq) (*FinalizacionResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Finalizar not implemented")
-}
-func (UnimplementedLaboratorioServiceServer) mustEmbedUnimplementedLaboratorioServiceServer() {}
-
-// UnsafeLaboratorioServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to LaboratorioServiceServer will
-// result in compilation errors.
-type UnsafeLaboratorioServiceServer interface {
-	mustEmbedUnimplementedLaboratorioServiceServer()
-}
-
-func RegisterLaboratorioServiceServer(s grpc.ServiceRegistrar, srv LaboratorioServiceServer) {
-	s.RegisterService(&LaboratorioService_ServiceDesc, srv)
-}
-
-func _LaboratorioService_PedirSituacion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SituacionReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LaboratorioServiceServer).PedirSituacion(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/grpc.LaboratorioService/PedirSituacion",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LaboratorioServiceServer).PedirSituacion(ctx, req.(*SituacionReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LaboratorioService_Finalizar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FinalizacionReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LaboratorioServiceServer).Finalizar(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/grpc.LaboratorioService/Finalizar",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LaboratorioServiceServer).Finalizar(ctx, req.(*FinalizacionReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// LaboratorioService_ServiceDesc is the grpc.ServiceDesc for LaboratorioService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var LaboratorioService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "grpc.LaboratorioService",
-	HandlerType: (*LaboratorioServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "PedirSituacion",
-			Handler:    _LaboratorioService_PedirSituacion_Handler,
-		},
-		{
-			MethodName: "Finalizar",
-			Handler:    _LaboratorioService_Finalizar_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "tarea.proto",
 }
