@@ -33,8 +33,8 @@ func CalcularResolucion() string {
 
 }
 
-func transformarSituacion(str string) int {
-	var resultado int
+func transformarSituacion(str string) int32 {
+	var resultado int32
 	if str == "LISTO" {
 		resultado = 1
 	} else {
@@ -44,17 +44,18 @@ func transformarSituacion(str string) int {
 
 }
 
-func ComunicarseConCentral(client pb.centralServiceClient, nro_escuadron string, nro_lab string) {
+func ComunicarseConCentral(client pb.CentralServiceClient, nro_escuadron string, nro_lab string) {
 
 	var resolucion string
-	stream, err := client.AbrirComunicacion(context.Background())
+	stream, _ := client.AbrirComunicacion(context.Background()) //stream, err := client.AbrirComunicacion(context.Background())
 
 	for resolucion = CalcularResolucion(); resolucion == "NO LISTO"; resolucion = CalcularResolucion() {
 		fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-		stream.Send(&pb.SituacionResp{resuelta: transformarSituacion(resolucion), nro_escuadra: nro_escuadron, nro_lab: nro_lab})
+		stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
 		_, _ = stream.Recv()
 	}
-	stream.SendAndClose(&pb.SituacionResp{resuelta: transformarSituacion(resolucion), nro_escuadra: nro_escuadron, nro_lab: nro_lab})
+	stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
+	stream.CloseSend()
 	fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
 }
 
@@ -66,7 +67,7 @@ func main() {
 	var estallido string
 	//Enviar mensaje con Rabbit. Esperar respuesta...
 
-	conn, err := grpc.Dial(ip_Central+":"+port_Central, grpc.WithInsecure())
+	conn, err := grpc.Dial(ip_Central+":"+port_Central, grpc.WithInsecure()) //grpc.WithInsecure())
 
 	if err != nil {
 		panic("cannot connect with server " + err.Error())

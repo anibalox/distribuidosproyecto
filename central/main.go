@@ -13,7 +13,7 @@ type server struct {
 	pb.UnimplementedCentralServiceServer
 }
 
-func transformarSituacion(nro int) string {
+func transformarSituacion(nro int32) string {
 	var resultado string
 	if nro == 1 {
 		resultado = "LISTO"
@@ -24,18 +24,18 @@ func transformarSituacion(nro int) string {
 
 }
 
-func (s *server) AbrirComunicacion(stream *pb.CentralService_AbrirComunicacionServer) error {
+func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionServer) error {
 
-	var situacion pb.SituacionResp
+	var situacion *pb.SituacionResp
 
 	time.Sleep(5 * time.Second)
-	for situacion, _ = stream.Recv(); situacion.resuelta == 0; situacion = stream.Recv() {
-		stream.Send(1)
-		fmt.Println("Estatus Escuadra " + situacion.nro_escuadra + " : [" + transformarSituacion(situacion.resuelta) + "]")
+	for situacion, _ = stream.Recv(); situacion.Resuelta == 0; situacion, _ = stream.Recv() {
+		stream.Send(&pb.SituacionReq{Peticion: 1})
+		fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
 		time.Sleep(5 * time.Second)
 	}
-	fmt.Println("Estatus Escuadra " + situacion.nro_escuadra + " : [" + transformarSituacion(situacion.resuelta) + "]")
-	fmt.Println("Retorno a Central Escuadra " + situacion.nro_escuadra + ", Conexion Laboratorio " + situacion.nro_lab + " Cerrada")
+	fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
+	fmt.Println("Retorno a Central Escuadra " + situacion.NroEscuadra + ", Conexion Laboratorio " + situacion.NroLab + " Cerrada")
 
 	return nil
 }
@@ -62,7 +62,7 @@ func main() {
 	}
 
 	serv := grpc.NewServer()
-	pb.RegisterWishListServiceServer(serv, &server{})
+	pb.RegisterCentralServiceServer(serv, &server{})
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())
 	}
