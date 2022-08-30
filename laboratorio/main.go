@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"time"
 
 	pb "github.com/anibalox/distribuidosproyecto/proto"
 	"google.golang.org/grpc"
@@ -53,15 +54,16 @@ func ComunicarseConCentral(client pb.centralServiceClient, nro_escuadron string,
 		stream.Send(&pb.SituacionResp{resuelta: transformarSituacion(resolucion), nro_escuadra: nro_escuadron, nro_lab: nro_lab})
 		_, _ = stream.Recv()
 	}
-	stream.CloseSend(&pb.SituacionResp{resuelta: transformarSituacion(resolucion), nro_escuadra: nro_escuadron, nro_lab: nro_lab})
+	stream.SendAndClose(&pb.SituacionResp{resuelta: transformarSituacion(resolucion), nro_escuadra: nro_escuadron, nro_lab: nro_lab})
 	fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
 }
 
 func main() {
 
-	ip_Central := "1111" //Colocar valores para esto
-	port_Central := "2222"
+	ip_Central := "localhost" //Colocar valores para esto
+	port_Central := "50051"
 
+	var estallido string
 	//Enviar mensaje con Rabbit. Esperar respuesta...
 
 	conn, err := grpc.Dial(ip_Central+":"+port_Central, grpc.WithInsecure())
@@ -74,9 +76,12 @@ func main() {
 
 	//FALTA COLOCAR LOOP IMPORTANTE!!!!!!!!!!!!!!!!!!!!!!!
 
-	for estallido := CalcularEstallido(); estallido == "OK"; estallido = CalcularEstallido() {
+	time.Sleep(5 * time.Second)
+	for estallido = CalcularEstallido(); estallido == "OK"; estallido = CalcularEstallido() {
 		fmt.Println("Analizando estado Laboratorio [" + estallido + "]")
+		time.Sleep(5 * time.Second)
 	}
+	fmt.Println("Analizando estado Laboratorio [" + estallido + "]")
 	fmt.Println("SOS Enviado a Central. Esperando respuesta...")
 	//Enviar mensaje con Rabbit. Esperar respuesta...
 
@@ -91,5 +96,7 @@ func main() {
 	ComunicarseConCentral(serviceClient, nro_escuadron, nro_lab)
 
 	//HASTA ACA EL LOOP!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+	//Para cerrar conn.Close()
 
 }
