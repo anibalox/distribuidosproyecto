@@ -72,7 +72,7 @@ func main() {
 		panic("cannot connect with server " + err.Error())
 	}
 
-	serviceClient := pb.NewWishListServiceClient(conn)
+	serviceClient := pb.NewCentralServiceClient(conn)
 
 	//FALTA COLOCAR LOOP IMPORTANTE!!!!!!!!!!!!!!!!!!!!!!!
 
