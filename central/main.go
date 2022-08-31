@@ -28,11 +28,10 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 	var situacion *pb.SituacionResp
 
-	time.Sleep(5 * time.Second)
 	for situacion, _ = stream.Recv(); situacion.Resuelta == 0; situacion, _ = stream.Recv() {
-		stream.Send(&pb.SituacionReq{Peticion: 1})
 		fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
 		time.Sleep(5 * time.Second)
+		stream.Send(&pb.SituacionReq{Peticion: 1})
 	}
 	fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
 	fmt.Println("Retorno a Central Escuadra " + situacion.NroEscuadra + ", Conexion Laboratorio " + situacion.NroLab + " Cerrada")
@@ -51,10 +50,6 @@ type mensajes struct {
 
 func main() {
 
-	var lista_mensajes []mensajes // Definir mensajes con Rabbit
-	cantidad_equipos := 2
-	var puerto, ip string
-
 	listner, err := net.Listen("tcp", ":50051")
 
 	if err != nil {
@@ -68,12 +63,6 @@ func main() {
 	}
 
 	//Cambiar ciclo para que se repita hasta senal de termino
-
-	for mensaje := range lista_mensajes {
-		puerto = mensaje.puerto
-		ip = mensaje.ip
-	}
-
 }
 
 //test
