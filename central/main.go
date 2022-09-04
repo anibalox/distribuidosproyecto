@@ -32,6 +32,7 @@ func transformarSituacion(nro int32) string {
 
 }
 
+<<<<<<< HEAD
 func (s *server) EsperarAyuda(context.Context, *AyudaReq) (*AyudaResp, error) {
 	for s.EquiposDisponibles == 0{}
 	nro_equipo:= strconv.Itoa(s.EquiposDisponibles)
@@ -42,6 +43,12 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 	var situacion *pb.SituacionResp
 
+=======
+func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionServer) error {
+
+	var situacion *pb.SituacionResp
+
+>>>>>>> 4d5c0447d0e777317aa805087e50399aaad7e6d8
 	for situacion, _ = stream.Recv(); situacion.Resuelta == 0; situacion, _ = stream.Recv() {
 		fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
 		time.Sleep(5 * time.Second)
@@ -108,7 +115,10 @@ type mensajes struct {
 }
 
 func main() {
+<<<<<<< HEAD
 	rabbit()
+=======
+>>>>>>> 4d5c0447d0e777317aa805087e50399aaad7e6d8
 
 	listner, err := net.Listen("tcp", ":50051")
 
@@ -117,7 +127,11 @@ func main() {
 	}
 
 	serv := grpc.NewServer()
+<<<<<<< HEAD
 	pb.RegisterCentralServiceServer(serv, &server{EquiposDisponibles: 2})
+=======
+	pb.RegisterCentralServiceServer(serv, &server{})
+>>>>>>> 4d5c0447d0e777317aa805087e50399aaad7e6d8
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())
 	}

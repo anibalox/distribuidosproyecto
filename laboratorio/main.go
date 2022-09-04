@@ -59,7 +59,10 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_escuadron string,
 		stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
 		_, _ = stream.Recv()
 	}
+<<<<<<< HEAD
 	fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
+=======
+>>>>>>> 4d5c0447d0e777317aa805087e50399aaad7e6d8
 	stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
 	stream.CloseSend()
 	fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
