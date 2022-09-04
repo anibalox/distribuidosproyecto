@@ -13,6 +13,15 @@ message SituacionResp{
     string nro_escuadra = 2;
     string nro_lab = 3;
 }
+
+message AyudaReq{
+    string ayuda = 1;
+}
+
+message AyudaResp{
+    string escuadron = 1;
+}
 service CentralService{
     rpc AbrirComunicacion(stream SituacionResp) returns (stream SituacionReq);
+    rpc EsperarAyuda(AyudaReq) returns (AyudaResp);
 }

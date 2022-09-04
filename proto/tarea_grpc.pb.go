@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CentralServiceClient interface {
 	AbrirComunicacion(ctx context.Context, opts ...grpc.CallOption) (CentralService_AbrirComunicacionClient, error)
+	EsperarAyuda(ctx context.Context, in *AyudaReq, opts ...grpc.CallOption) (*AyudaResp, error)
 }
 
 type centralServiceClient struct {
@@ -64,11 +65,21 @@ func (x *centralServiceAbrirComunicacionClient) Recv() (*SituacionReq, error) {
 	return m, nil
 }
 
+func (c *centralServiceClient) EsperarAyuda(ctx context.Context, in *AyudaReq, opts ...grpc.CallOption) (*AyudaResp, error) {
+	out := new(AyudaResp)
+	err := c.cc.Invoke(ctx, "/grpc.CentralService/EsperarAyuda", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CentralServiceServer is the server API for CentralService service.
 // All implementations must embed UnimplementedCentralServiceServer
 // for forward compatibility
 type CentralServiceServer interface {
 	AbrirComunicacion(CentralService_AbrirComunicacionServer) error
+	EsperarAyuda(context.Context, *AyudaReq) (*AyudaResp, error)
 	mustEmbedUnimplementedCentralServiceServer()
 }
 
@@ -78,6 +89,9 @@ type UnimplementedCentralServiceServer struct {
 
 func (UnimplementedCentralServiceServer) AbrirComunicacion(CentralService_AbrirComunicacionServer) error {
 	return status.Errorf(codes.Unimplemented, "method AbrirComunicacion not implemented")
+}
+func (UnimplementedCentralServiceServer) EsperarAyuda(context.Context, *AyudaReq) (*AyudaResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EsperarAyuda not implemented")
 }
 func (UnimplementedCentralServiceServer) mustEmbedUnimplementedCentralServiceServer() {}
 
@@ -118,13 +132,36 @@ func (x *centralServiceAbrirComunicacionServer) Recv() (*SituacionResp, error) {
 	return m, nil
 }
 
+func _CentralService_EsperarAyuda_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AyudaReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CentralServiceServer).EsperarAyuda(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpc.CentralService/EsperarAyuda",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CentralServiceServer).EsperarAyuda(ctx, req.(*AyudaReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CentralService_ServiceDesc is the grpc.ServiceDesc for CentralService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CentralService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "grpc.CentralService",
 	HandlerType: (*CentralServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "EsperarAyuda",
+			Handler:    _CentralService_EsperarAyuda_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "AbrirComunicacion",
