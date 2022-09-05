@@ -1,45 +1,54 @@
 package main
 
 import (
-	"fmt"
-	"io"
-	"net"
-	"time"
+	//No estoy seguro
 
+	"fmt" // Para imprimir
+	"net"
+
+	//Para terminar los programas con un senal
+	"os"
+	"os/signal"
+	"syscall"
+
+	"time" // Para utilizar otras seed
+
+	//Donde estan los datos del .proto
 	pb "github.com/anibalox/distribuidosproyecto/proto"
 	"google.golang.org/grpc"
 
 	//rabbit
 	"log"
-
-	"strconv"
-
+	//Tambien rabbit
 	amqp "github.com/rabbitmq/amqp091-go"
+
+	//Para convertir los EquiposDisponibles en string
+	"strconv"
 )
 
 var EquiposDisponibles int
 var ColaEspera [4]string
 var Termino string
+var LabsCerrados int
 
 type server struct {
 	pb.UnimplementedCentralServiceServer
 }
 
-func transformarSituacion(nro int32) string {
-	var resultado string
-	if nro == 1 {
-		resultado = "LISTO"
-	} else {
-		resultado = "NO LISTO"
+func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
+	for Termino == "0" {
 	}
-	return resultado
-
+	stream.Send(&pb.Termino{Termino: "1"})
+	_, _ = stream.Recv()
+	LabsCerrados += 1
+	return nil
 }
 
 func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionServer) error {
 
 	var situacion *pb.SituacionResp
 	var nroLab string
+	var nroEscuadra string
 
 	//Recibir mensaje de introduccion
 	situacion, _ = stream.Recv()
@@ -53,21 +62,19 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 		//PUEDE HABER PROBLEMAS DE CONCURRENCIA ACA
 		//Enviar Ayuda
-		stream.Send(&pb.SituacionReq{NroEscuadra: strconv.Itoa(EquiposDisponibles), Termino: Termino})
-		if Termino == "1" {
-			break
-		}
+		nroEscuadra = strconv.Itoa(EquiposDisponibles)
+		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 
 		//Falta hacer un delete del primer objeto aqui. Como un pull de una cola
 
 		//Esperar respuesta de situacion de lab
-		for situacion, _ = stream.Recv(); err != io.EOF; situacion, _ = stream.Recv() {
-			fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
+		for situacion, _ = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, _ = stream.Recv() {
+			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 			time.Sleep(5 * time.Second)
-			stream.Send(&pb.SituacionReq{Peticion: 1})
+			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 		}
-		fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
-		fmt.Println("Retorno a Central Escuadra " + situacion.NroEscuadra + ", Conexion Laboratorio " + situacion.NroLab + " Cerrada")
+		fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
+		fmt.Println("Retorno a Central Escuadra " + nroEscuadra + ", Conexion Laboratorio " + nroLab + " Cerrada")
 		EquiposDisponibles += 1
 	}
 
@@ -125,8 +132,8 @@ func rabbit() {
 func main() {
 
 	Termino = "0"
+	LabsCerrados = 0
 	rabbit()
-
 	EquiposDisponibles = 2
 	listner, err := net.Listen("tcp", ":50051")
 
@@ -136,6 +143,15 @@ func main() {
 
 	serv := grpc.NewServer()
 	pb.RegisterCentralServiceServer(serv, &server{})
+
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		for LabsCerrados != 4 {
+		}
+		os.Exit(1)
+	}()
 
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())

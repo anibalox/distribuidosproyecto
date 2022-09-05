@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CentralServiceClient interface {
 	AbrirComunicacion(ctx context.Context, opts ...grpc.CallOption) (CentralService_AbrirComunicacionClient, error)
-	Terminar(ctx context.Context, in *Termino, opts ...grpc.CallOption) (*Termino, error)
+	Terminar(ctx context.Context, opts ...grpc.CallOption) (CentralService_TerminarClient, error)
 }
 
 type centralServiceClient struct {
@@ -65,13 +65,35 @@ func (x *centralServiceAbrirComunicacionClient) Recv() (*SituacionReq, error) {
 	return m, nil
 }
 
-func (c *centralServiceClient) Terminar(ctx context.Context, in *Termino, opts ...grpc.CallOption) (*Termino, error) {
-	out := new(Termino)
-	err := c.cc.Invoke(ctx, "/grpc.CentralService/Terminar", in, out, opts...)
+func (c *centralServiceClient) Terminar(ctx context.Context, opts ...grpc.CallOption) (CentralService_TerminarClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CentralService_ServiceDesc.Streams[1], "/grpc.CentralService/Terminar", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &centralServiceTerminarClient{stream}
+	return x, nil
+}
+
+type CentralService_TerminarClient interface {
+	Send(*Termino) error
+	Recv() (*Termino, error)
+	grpc.ClientStream
+}
+
+type centralServiceTerminarClient struct {
+	grpc.ClientStream
+}
+
+func (x *centralServiceTerminarClient) Send(m *Termino) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *centralServiceTerminarClient) Recv() (*Termino, error) {
+	m := new(Termino)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // CentralServiceServer is the server API for CentralService service.
@@ -79,7 +101,7 @@ func (c *centralServiceClient) Terminar(ctx context.Context, in *Termino, opts .
 // for forward compatibility
 type CentralServiceServer interface {
 	AbrirComunicacion(CentralService_AbrirComunicacionServer) error
-	Terminar(context.Context, *Termino) (*Termino, error)
+	Terminar(CentralService_TerminarServer) error
 	mustEmbedUnimplementedCentralServiceServer()
 }
 
@@ -90,8 +112,8 @@ type UnimplementedCentralServiceServer struct {
 func (UnimplementedCentralServiceServer) AbrirComunicacion(CentralService_AbrirComunicacionServer) error {
 	return status.Errorf(codes.Unimplemented, "method AbrirComunicacion not implemented")
 }
-func (UnimplementedCentralServiceServer) Terminar(context.Context, *Termino) (*Termino, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Terminar not implemented")
+func (UnimplementedCentralServiceServer) Terminar(CentralService_TerminarServer) error {
+	return status.Errorf(codes.Unimplemented, "method Terminar not implemented")
 }
 func (UnimplementedCentralServiceServer) mustEmbedUnimplementedCentralServiceServer() {}
 
@@ -132,22 +154,30 @@ func (x *centralServiceAbrirComunicacionServer) Recv() (*SituacionResp, error) {
 	return m, nil
 }
 
-func _CentralService_Terminar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Termino)
-	if err := dec(in); err != nil {
+func _CentralService_Terminar_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CentralServiceServer).Terminar(&centralServiceTerminarServer{stream})
+}
+
+type CentralService_TerminarServer interface {
+	Send(*Termino) error
+	Recv() (*Termino, error)
+	grpc.ServerStream
+}
+
+type centralServiceTerminarServer struct {
+	grpc.ServerStream
+}
+
+func (x *centralServiceTerminarServer) Send(m *Termino) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *centralServiceTerminarServer) Recv() (*Termino, error) {
+	m := new(Termino)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(CentralServiceServer).Terminar(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/grpc.CentralService/Terminar",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CentralServiceServer).Terminar(ctx, req.(*Termino))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // CentralService_ServiceDesc is the grpc.ServiceDesc for CentralService service.
@@ -156,16 +186,17 @@ func _CentralService_Terminar_Handler(srv interface{}, ctx context.Context, dec 
 var CentralService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "grpc.CentralService",
 	HandlerType: (*CentralServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Terminar",
-			Handler:    _CentralService_Terminar_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "AbrirComunicacion",
 			Handler:       _CentralService_AbrirComunicacion_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "Terminar",
+			Handler:       _CentralService_Terminar_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

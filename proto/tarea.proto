@@ -13,12 +13,11 @@ message Termino{
 
 message SituacionResp{
     string resuelta = 1;
-    string nro_escuadra = 2;
-    string nro_lab = 3;
+    string NroLab = 2;
 }
 
 
 service CentralService{
     rpc AbrirComunicacion(stream SituacionResp) returns (stream SituacionReq);
-    rpc Terminar(Termino) returns (Termino);
+    rpc Terminar(stream Termino) returns (stream Termino);
 }

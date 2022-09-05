@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 
 	pb "github.com/anibalox/distribuidosproyecto/proto"
@@ -34,17 +35,6 @@ func CalcularResolucion() string {
 		resultado = "NO LISTO"
 	}
 
-	return resultado
-
-}
-
-func transformarSituacion(str string) int32 {
-	var resultado int32
-	if str == "LISTO" {
-		resultado = 1
-	} else {
-		resultado = 0
-	}
 	return resultado
 
 }
@@ -91,7 +81,7 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 	stream, _ := client.AbrirComunicacion(context.Background()) //stream, err := client.AbrirComunicacion(context.Background())
 
 	//Mensaje de introduccion
-	stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: "0", NroLab: nro_lab})
+	stream.Send(&pb.SituacionResp{Resuelta: "NO LISTO", NroLab: nro_lab})
 
 	for {
 		//Calculo de Estallido
@@ -113,11 +103,11 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 
 		for resolucion = CalcularResolucion(); resolucion == "NO LISTO"; resolucion = CalcularResolucion() {
 			fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-			stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
+			stream.Send(&pb.SituacionResp{Resuelta: resolucion})
 			_, _ = stream.Recv()
 		}
 		fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-		stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
+		stream.Send(&pb.SituacionResp{Resuelta: resolucion})
 		stream.CloseSend()
 		fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
 	}
@@ -157,6 +147,11 @@ func main() {
 
 	serviceClient := pb.NewCentralServiceClient(conn)
 
-	ComunicarseConCentral(serviceClient, nro_lab)
+	go ComunicarseConCentral(serviceClient, nro_lab)
+
+	stream, _ := serviceClient.AbrirComunicacion(context.Background())
+	_, _ = stream.Recv()                   // Recibir senal de termino
+	stream.Send(&pb.Termino{Termino: "1"}) // Enviar Confirmacion
+	os.Exit(1)
 
 }
