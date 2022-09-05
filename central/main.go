@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"time"
 
@@ -11,14 +12,17 @@ import (
 	//rabbit
 	"log"
 
-	amqp "github.com/rabbitmq/amqp091-go"
 	"strconv"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
+
+var EquiposDisponibles int
+var ColaEspera [4]string
+var Termino string
 
 type server struct {
 	pb.UnimplementedCentralServiceServer
-	EquiposDisponibles int
-	
 }
 
 func transformarSituacion(nro int32) string {
@@ -32,32 +36,41 @@ func transformarSituacion(nro int32) string {
 
 }
 
-<<<<<<< HEAD
-func (s *server) EsperarAyuda(context.Context, *AyudaReq) (*AyudaResp, error) {
-	for s.EquiposDisponibles == 0{}
-	nro_equipo:= strconv.Itoa(s.EquiposDisponibles)
-	s.EquiposDisponibles -= 1
-	return &pb.AyudaResp{Escuadron: nro_equipo}, nil
-
 func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionServer) error {
 
 	var situacion *pb.SituacionResp
+	var nroLab string
 
-=======
-func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionServer) error {
+	//Recibir mensaje de introduccion
+	situacion, _ = stream.Recv()
+	nroLab = situacion.NroLab
 
-	var situacion *pb.SituacionResp
+	for {
+		//Esperar enviar mensaje hasta disponibilidad de equipos y que este Lab sea el primero en la cola
+		for ColaEspera[0] != nroLab || EquiposDisponibles == 0 {
+		} // CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
+		EquiposDisponibles -= 1
 
->>>>>>> 4d5c0447d0e777317aa805087e50399aaad7e6d8
-	for situacion, _ = stream.Recv(); situacion.Resuelta == 0; situacion, _ = stream.Recv() {
+		//PUEDE HABER PROBLEMAS DE CONCURRENCIA ACA
+		//Enviar Ayuda
+		stream.Send(&pb.SituacionReq{NroEscuadra: strconv.Itoa(EquiposDisponibles), Termino: Termino})
+		if Termino == "1" {
+			break
+		}
+
+		//Falta hacer un delete del primer objeto aqui. Como un pull de una cola
+
+		//Esperar respuesta de situacion de lab
+		for situacion, _ = stream.Recv(); err != io.EOF; situacion, _ = stream.Recv() {
+			fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
+			time.Sleep(5 * time.Second)
+			stream.Send(&pb.SituacionReq{Peticion: 1})
+		}
 		fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
-		time.Sleep(5 * time.Second)
-		stream.Send(&pb.SituacionReq{Peticion: 1})
+		fmt.Println("Retorno a Central Escuadra " + situacion.NroEscuadra + ", Conexion Laboratorio " + situacion.NroLab + " Cerrada")
+		EquiposDisponibles += 1
 	}
-	fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
-	fmt.Println("Retorno a Central Escuadra " + situacion.NroEscuadra + ", Conexion Laboratorio " + situacion.NroLab + " Cerrada")
 
-	s.EquiposDisponibles += 1
 	return nil
 }
 
@@ -109,17 +122,12 @@ func rabbit() {
 
 }
 
-type mensajes struct {
-	ip     string
-	puerto string
-}
-
 func main() {
-<<<<<<< HEAD
-	rabbit()
-=======
->>>>>>> 4d5c0447d0e777317aa805087e50399aaad7e6d8
 
+	Termino = "0"
+	rabbit()
+
+	EquiposDisponibles = 2
 	listner, err := net.Listen("tcp", ":50051")
 
 	if err != nil {
@@ -127,11 +135,8 @@ func main() {
 	}
 
 	serv := grpc.NewServer()
-<<<<<<< HEAD
-	pb.RegisterCentralServiceServer(serv, &server{EquiposDisponibles: 2})
-=======
 	pb.RegisterCentralServiceServer(serv, &server{})
->>>>>>> 4d5c0447d0e777317aa805087e50399aaad7e6d8
+
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())
 	}

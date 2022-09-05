@@ -49,43 +49,8 @@ func transformarSituacion(str string) int32 {
 
 }
 
-func ComunicarseConCentral(client pb.CentralServiceClient, nro_escuadron string, nro_lab string) {
-
-	var resolucion string
-	stream, _ := client.AbrirComunicacion(context.Background()) //stream, err := client.AbrirComunicacion(context.Background())
-
-	for resolucion = CalcularResolucion(); resolucion == "NO LISTO"; resolucion = CalcularResolucion() {
-		fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-		stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
-		_, _ = stream.Recv()
-	}
-<<<<<<< HEAD
-	fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-=======
->>>>>>> 4d5c0447d0e777317aa805087e50399aaad7e6d8
-	stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
-	stream.CloseSend()
-	fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
-}
-
-func EsperarAyuda(client pb.centralServiceClient) string {
-	var respuesta *pb.AyudaResp
-	respuesta, _ = client.EsperarAyuda(context.Background(), &pb.AyudaReq{Ayuda: "1"})
-	return respuesta.Escuadron
-}
-
-func DarNumeroLab() string {
-	return "2"
-}
-
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Panicf("%s: %s", msg, err)
-	}
-}
-
 func rabbit() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/") //Escribir datos de la central
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -116,16 +81,72 @@ func rabbit() {
 	failOnError(err, "Failed to publish a message")
 	log.Printf(" [x] Sent %s\n", body)
 }
+func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
+
+	var resolucion string
+	var nro_escuadron string
+	var situacion *pb.SituacionReq
+	var estallido string
+
+	stream, _ := client.AbrirComunicacion(context.Background()) //stream, err := client.AbrirComunicacion(context.Background())
+
+	//Mensaje de introduccion
+	stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: "0", NroLab: nro_lab})
+
+	for {
+		//Calculo de Estallido
+		time.Sleep(5 * time.Second)
+		for estallido = CalcularEstallido(); estallido == "OK"; estallido = CalcularEstallido() {
+			fmt.Println("Analizando estado Laboratorio [" + estallido + "]")
+			time.Sleep(5 * time.Second)
+		}
+		fmt.Println("Analizando estado Laboratorio [" + estallido + "]")
+		fmt.Println("SOS Enviado a Central. Esperando respuesta...")
+
+		//Envia mensaje
+		rabbit()
+
+		//Esperar recibir ayuda
+		situacion, _ = stream.Recv()
+		nro_escuadron = situacion.NroEscuadra
+		fmt.Println("Llega escuadron " + nro_escuadron + ", conteniendo estallido")
+
+		for resolucion = CalcularResolucion(); resolucion == "NO LISTO"; resolucion = CalcularResolucion() {
+			fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
+			stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
+			_, _ = stream.Recv()
+		}
+		fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
+		stream.Send(&pb.SituacionResp{Resuelta: transformarSituacion(resolucion), NroEscuadra: nro_escuadron, NroLab: nro_lab})
+		stream.CloseSend()
+		fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
+	}
+
+}
+
+func EsperarAyuda(client pb.centralServiceClient) string {
+	var respuesta *pb.AyudaResp
+	respuesta, _ = client.EsperarAyuda(context.Background(), &pb.AyudaReq{Ayuda: "1"})
+	return respuesta.Escuadron
+}
+
+func DarNumeroLab(ip string, puerto string) string {
+	return "2"
+}
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Panicf("%s: %s", msg, err)
+	}
+}
 
 func main() {
-	rabbit()
 
 	ip_Central := "localhost" //Colocar valores para esto
 	port_Central := "50051"
 
-	nro_lab := "2"
+	nro_lab := DarNumeroLab(ip_lab, port_lab)
 
-	var estallido string
 	//Enviar mensaje con Rabbit. Esperar respuesta...
 
 	conn, err := grpc.Dial(ip_Central+":"+port_Central, grpc.WithInsecure()) //grpc.WithInsecure())
@@ -136,27 +157,6 @@ func main() {
 
 	serviceClient := pb.NewCentralServiceClient(conn)
 
-	//FALTA COLOCAR LOOP IMPORTANTE!!!!!!!!!!!!!!!!!!!!!!!
-
-	time.Sleep(5 * time.Second)
-	for estallido = CalcularEstallido(); estallido == "OK"; estallido = CalcularEstallido() {
-		fmt.Println("Analizando estado Laboratorio [" + estallido + "]")
-		time.Sleep(5 * time.Second)
-	}
-	fmt.Println("Analizando estado Laboratorio [" + estallido + "]")
-	fmt.Println("SOS Enviado a Central. Esperando respuesta...")
-	//Enviar mensaje con Rabbit. Esperar respuesta...
-
-	nro_escuadron := EsperarAyuda(serviceClient)
-
-	//Leer mensaje con Rabbit. No se como funcione
-	fmt.Println("Llega escuadron " + nro_escuadron + ", conteniendo estallido")
-
-	//Comienzo del envio de mensajes
-	ComunicarseConCentral(serviceClient, nro_escuadron, nro_lab)
-
-	//HASTA ACA EL LOOP!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-	//Para cerrar conn.Close()
+	ComunicarseConCentral(serviceClient, nro_lab)
 
 }
