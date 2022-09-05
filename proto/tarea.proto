@@ -6,7 +6,9 @@ option go_package = "github.com/anibalox/distribuidosproyecto";
 
 message SituacionReq{
     string nro_escuadra = 1;
-    string termino = 2;
+}
+message Termino{
+    string Termino = 1;
 }
 
 message SituacionResp{
@@ -18,4 +20,5 @@ message SituacionResp{
 
 service CentralService{
     rpc AbrirComunicacion(stream SituacionResp) returns (stream SituacionReq);
+    rpc Terminar(Termino) returns (Termino);
 }

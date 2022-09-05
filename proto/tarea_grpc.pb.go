@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CentralServiceClient interface {
 	AbrirComunicacion(ctx context.Context, opts ...grpc.CallOption) (CentralService_AbrirComunicacionClient, error)
-	EsperarAyuda(ctx context.Context, in *AyudaReq, opts ...grpc.CallOption) (*AyudaResp, error)
+	Terminar(ctx context.Context, in *Termino, opts ...grpc.CallOption) (*Termino, error)
 }
 
 type centralServiceClient struct {
@@ -65,9 +65,9 @@ func (x *centralServiceAbrirComunicacionClient) Recv() (*SituacionReq, error) {
 	return m, nil
 }
 
-func (c *centralServiceClient) EsperarAyuda(ctx context.Context, in *AyudaReq, opts ...grpc.CallOption) (*AyudaResp, error) {
-	out := new(AyudaResp)
-	err := c.cc.Invoke(ctx, "/grpc.CentralService/EsperarAyuda", in, out, opts...)
+func (c *centralServiceClient) Terminar(ctx context.Context, in *Termino, opts ...grpc.CallOption) (*Termino, error) {
+	out := new(Termino)
+	err := c.cc.Invoke(ctx, "/grpc.CentralService/Terminar", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (c *centralServiceClient) EsperarAyuda(ctx context.Context, in *AyudaReq, o
 // for forward compatibility
 type CentralServiceServer interface {
 	AbrirComunicacion(CentralService_AbrirComunicacionServer) error
-	EsperarAyuda(context.Context, *AyudaReq) (*AyudaResp, error)
+	Terminar(context.Context, *Termino) (*Termino, error)
 	mustEmbedUnimplementedCentralServiceServer()
 }
 
@@ -90,8 +90,8 @@ type UnimplementedCentralServiceServer struct {
 func (UnimplementedCentralServiceServer) AbrirComunicacion(CentralService_AbrirComunicacionServer) error {
 	return status.Errorf(codes.Unimplemented, "method AbrirComunicacion not implemented")
 }
-func (UnimplementedCentralServiceServer) EsperarAyuda(context.Context, *AyudaReq) (*AyudaResp, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EsperarAyuda not implemented")
+func (UnimplementedCentralServiceServer) Terminar(context.Context, *Termino) (*Termino, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Terminar not implemented")
 }
 func (UnimplementedCentralServiceServer) mustEmbedUnimplementedCentralServiceServer() {}
 
@@ -132,20 +132,20 @@ func (x *centralServiceAbrirComunicacionServer) Recv() (*SituacionResp, error) {
 	return m, nil
 }
 
-func _CentralService_EsperarAyuda_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AyudaReq)
+func _CentralService_Terminar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Termino)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CentralServiceServer).EsperarAyuda(ctx, in)
+		return srv.(CentralServiceServer).Terminar(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/grpc.CentralService/EsperarAyuda",
+		FullMethod: "/grpc.CentralService/Terminar",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CentralServiceServer).EsperarAyuda(ctx, req.(*AyudaReq))
+		return srv.(CentralServiceServer).Terminar(ctx, req.(*Termino))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -158,8 +158,8 @@ var CentralService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*CentralServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "EsperarAyuda",
-			Handler:    _CentralService_EsperarAyuda_Handler,
+			MethodName: "Terminar",
+			Handler:    _CentralService_Terminar_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
