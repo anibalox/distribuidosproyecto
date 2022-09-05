@@ -1,7 +1,6 @@
 package main
 
 import (
-	l "container/list"
 	"fmt"
 	"net"
 	"time"
@@ -17,7 +16,6 @@ import (
 
 type server struct {
 	pb.UnimplementedCentralServiceServer
-	mensaje string
 }
 
 func transformarSituacion(nro int32) string {
@@ -36,11 +34,10 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	var situacion *pb.SituacionResp
 
 	for situacion, _ = stream.Recv(); situacion.Resuelta == 0; situacion, _ = stream.Recv() {
-		println("test 1")
 		fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
 		time.Sleep(5 * time.Second)
 		stream.Send(&pb.SituacionReq{Peticion: 1})
-		println("test 2")
+		fmt.Println("queue serv", queue)
 	}
 	fmt.Println("Estatus Escuadra " + situacion.NroEscuadra + " : [" + transformarSituacion(situacion.Resuelta) + "]")
 	fmt.Println("Retorno a Central Escuadra " + situacion.NroEscuadra + ", Conexion Laboratorio " + situacion.NroLab + " Cerrada")
@@ -57,7 +54,7 @@ func failOnError(err error, msg string) {
 		log.Panicf("%s: %s", msg, err)
 	}
 }
-func rabbit(serv server) {
+func rabbit() {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -89,21 +86,42 @@ func rabbit(serv server) {
 
 	for d := range msgs {
 		log.Printf("Received a message: %s", d.Body)
-		serv.mensaje = string(d.Body)
+		queue = enqueue(queue, string(d.Body))
 	}
 
 	//log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 
 }
 
-var queue *l.List
+func enqueue(queue []string, element string) []string {
+	queue = append(queue, element) // Simply append to enqueue.
+	fmt.Println("Enqueued:", element)
+	return queue
+}
+
+func dequeue(queue []string) (string, []string) {
+	element := queue[0] // The first element is the one to be dequeued.
+	if len(queue) == 1 {
+		var tmp = []string{}
+		return element, tmp
+
+	}
+
+	return element, queue[1:] // Slice off the element once it is dequeued.
+}
+
+var queue = make([]string, 0)
 
 func main() {
 	var forever chan struct{}
-	queue = l.New()
-	queue.PushBack("hola")
-	queue.PushBack(2)
-	fmt.Println(queue.Front().Value)
+	/*
+		queue = enqueue(queue, "10")
+		fmt.Println("After pushing 10 ", queue)
+		queue = enqueue(queue, "20")
+		fmt.Println("After pushing 20 ", queue)
+		ele, queue := dequeue(queue)
+		fmt.Println("Queue After removing", ele, " :", queue)
+	*/
 
 	listner, err := net.Listen("tcp", ":50051")
 
@@ -112,15 +130,13 @@ func main() {
 	}
 
 	serv := grpc.NewServer()
-	nuevo_server := server{mensaje: "xd"}
-	print(nuevo_server.mensaje + "aqui /n")
-	go rabbit(nuevo_server)
+	nuevo_server := server{}
+	go rabbit()
+	fmt.Println("After rabbit ", queue)
 	pb.RegisterCentralServiceServer(serv, &nuevo_server)
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())
 	}
-	print("test /n")
-	print(nuevo_server.mensaje + "otro /n")
 	<-forever
 
 	//Cambiar ciclo para que se repita hasta senal de termino
