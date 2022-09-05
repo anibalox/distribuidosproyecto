@@ -45,10 +45,6 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	return nil
 }
 
-func EnviarAyuda(ip string, puerto string) {
-
-}
-
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Panicf("%s: %s", msg, err)
@@ -87,6 +83,7 @@ func rabbit() {
 	for d := range msgs {
 		log.Printf("Received a message: %s", d.Body)
 		queue = enqueue(queue, string(d.Body))
+
 	}
 
 	//log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
