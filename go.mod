@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/golang/protobuf v1.5.2
+	github.com/rabbitmq/amqp091-go v1.4.0
 	google.golang.org/grpc v1.49.0
 	google.golang.org/grpc/examples v0.0.0-20220830210155-d875a0e89383
 	google.golang.org/protobuf v1.27.1
