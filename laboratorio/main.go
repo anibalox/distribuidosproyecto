@@ -132,6 +132,8 @@ func failOnError(err error, msg string) {
 
 func main() {
 
+	rand.Seed(time.Now().UnixNano()) // iniciar semilla
+
 	ip_Central := "localhost" //Colocar valores para esto
 	port_Central := "50051"
 
