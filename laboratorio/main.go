@@ -131,7 +131,8 @@ func main() {
 
 	ip_Central := "localhost" //Colocar valores para esto
 	port_Central := "50051"
-
+	ip_lab := "192.168."
+	port_lab := "1234"
 	nro_lab := DarNumeroLab(ip_lab, port_lab) //Falta definir como le damos los nombres a los labs
 
 	//Enviar mensaje con Rabbit. Esperar respuesta...
@@ -147,7 +148,8 @@ func main() {
 	go ComunicarseConCentral(serviceClient, nro_lab)
 
 	stream, _ := serviceClient.AbrirComunicacion(context.Background())
-	_, _ = stream.Recv()                   // Recibir senal de termino
-	stream.Send(&pb.Termino{Termino: "1"}) // Enviar Confirmacion
+	_, _ = stream.Recv()                                    // Recibir senal de termino
+	term, _ := serviceClient.Terminar(context.Background()) //agregado para corregir error en siguiente linea
+	term.Send(&pb.Termino{Termino: "1"})                    // Enviar Confirmacion
 	os.Exit(1)
 }
