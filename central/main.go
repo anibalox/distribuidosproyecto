@@ -25,7 +25,7 @@ import (
 )
 
 var EquiposDisponibles int
-var ColaEspera [4]string
+var ColaEspera = make([]string, 0) //var ColaEspera [4]string
 var Termino string
 var LabsCerrados int
 
@@ -55,15 +55,16 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 	for {
 		//Esperar enviar mensaje hasta disponibilidad de equipos y que este Lab sea el primero en la cola
-		fmt.Println("Inicio cola" + ColaEspera[0])
+		fmt.Println("ColaEspera", ColaEspera)
 		fmt.Println(EquiposDisponibles)
-		for ColaEspera[0] != nroLab || EquiposDisponibles == 0 {
+		for primeroEnCola(ColaEspera) != nroLab || EquiposDisponibles == 0 {
 			time.Sleep(1 * time.Second)
+			fmt.Println("---->aquí")
 		} // CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
 		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		EquiposDisponibles -= 1
 		//Eliminar el dato de cabeza de la cola
-		fmt.Println("Inicio cola" + ColaEspera[0])
+		fmt.Println("ColaEspera", ColaEspera)
 		fmt.Println(EquiposDisponibles)
 
 		//Enviar Ayuda
@@ -117,26 +118,47 @@ func rabbit() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	//var forever chan struct{}
-
 	go func() {
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
+			ColaEspera = enqueue(ColaEspera, string(d.Body))
 		}
 	}()
+}
 
-	//log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	//<-forever
+func primeroEnCola(ColaEspera []string) string {
+	if len(ColaEspera) == 0 {
+		return "0"
+	}
+	return ColaEspera[0]
+}
 
+func enqueue(ColaEspera []string, element string) []string {
+	ColaEspera = append(ColaEspera, element) // Simply append to enqueue.
+	fmt.Println("Enqueued:", element)
+	return ColaEspera
+}
+
+func dequeue(ColaEspera []string) (string, []string) {
+	element := ColaEspera[0] // The first element is the one to be dequeued.
+	if len(ColaEspera) == 1 {
+		var tmp = []string{}
+		return element, tmp
+
+	}
+
+	return element, ColaEspera[1:] // Slice off the element once it is dequeued.
 }
 
 func main() {
-
+	//println(len(ColaEspera))
 	Termino = "0"
 	LabsCerrados = 0
 	rabbit()
 	EquiposDisponibles = 2
-	ColaEspera[0] = "2"
+
+	//ColaEspera = append(ColaEspera, "0") //ColaEspera[0] = "2"
+	//fmt.Println(ColaEspera[0])
 	listner, err := net.Listen("tcp", ":50051")
 
 	if err != nil {
@@ -151,9 +173,11 @@ func main() {
 	go func() {
 		<-c
 		Termino = "1"
-		for LabsCerrados != 0 {
-			time.Sleep(1 * time.Second)
-		}
+		/*
+			for LabsCerrados != 4 {
+				time.Sleep(1 * time.Second)
+			}
+		*/
 		os.Exit(1)
 	}()
 
