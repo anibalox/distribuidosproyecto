@@ -60,10 +60,11 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		for primeroEnCola(ColaEspera) != nroLab || EquiposDisponibles == 0 {
 			time.Sleep(1 * time.Second)
 			fmt.Println("---->aquí")
-		} // CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
+		}
+		// CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
 		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		EquiposDisponibles -= 1
-		//Eliminar el dato de cabeza de la cola
+		_, ColaEspera := dequeue(ColaEspera)
 		fmt.Println("ColaEspera", ColaEspera)
 		fmt.Println(EquiposDisponibles)
 
@@ -154,7 +155,7 @@ func main() {
 	//println(len(ColaEspera))
 	Termino = "0"
 	LabsCerrados = 0
-	rabbit()
+	go rabbit()
 	EquiposDisponibles = 2
 
 	//ColaEspera = append(ColaEspera, "0") //ColaEspera[0] = "2"
