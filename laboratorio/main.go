@@ -150,5 +150,4 @@ func main() {
 	_, _ = stream.Recv()                   // Recibir senal de termino
 	stream.Send(&pb.Termino{Termino: "1"}) // Enviar Confirmacion
 	os.Exit(1)
-
 }

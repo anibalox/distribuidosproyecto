@@ -56,6 +56,7 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	for {
 		//Esperar enviar mensaje hasta disponibilidad de equipos y que este Lab sea el primero en la cola
 		for ColaEspera[0] != nroLab || EquiposDisponibles == 0 {
+			println("hola")
 		} // CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
 		EquiposDisponibles -= 1
 		//Eliminar el dato de cabeza de la cola
@@ -75,7 +76,6 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		fmt.Println("Retorno a Central Escuadra " + nroEscuadra + ", Conexion Laboratorio " + nroLab + " Cerrada")
 		EquiposDisponibles += 1
 	}
-
 	return nil
 }
 
@@ -147,6 +147,7 @@ func main() {
 	go func() {
 		<-c
 		for LabsCerrados != 4 {
+			print("aqui")
 		}
 		os.Exit(1)
 	}()

@@ -8,7 +8,7 @@ message SituacionReq{
     string nro_escuadra = 1;
 }
 message Termino{
-    string Termino = 1;
+    string termino = 1;
 }
 
 message SituacionResp{
