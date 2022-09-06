@@ -35,7 +35,7 @@ type server struct {
 
 func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
 	for Termino == "0" {
-		println("termino")
+		time.Sleep(1 * time.Second)
 	}
 	stream.Send(&pb.Termino{Termino: "1"})
 	_, _ = stream.Recv()
@@ -55,14 +55,18 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 	for {
 		//Esperar enviar mensaje hasta disponibilidad de equipos y que este Lab sea el primero en la cola
+		fmt.Println("Inicio cola" + ColaEspera[0])
+		fmt.Println(EquiposDisponibles)
 		for ColaEspera[0] != nroLab || EquiposDisponibles == 0 {
-			println("hola")
+			time.Sleep(1 * time.Second)
 		} // CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
+		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		EquiposDisponibles -= 1
 		//Eliminar el dato de cabeza de la cola
+		fmt.Println("Inicio cola" + ColaEspera[0])
+		fmt.Println(EquiposDisponibles)
 
 		//Enviar Ayuda
-		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 
 		//Realizando battalla. Esperar respuesta de situacion de lab
@@ -76,7 +80,6 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		fmt.Println("Retorno a Central Escuadra " + nroEscuadra + ", Conexion Laboratorio " + nroLab + " Cerrada")
 		EquiposDisponibles += 1
 	}
-	return nil
 }
 
 func failOnError(err error, msg string) {
@@ -133,6 +136,7 @@ func main() {
 	LabsCerrados = 0
 	rabbit()
 	EquiposDisponibles = 2
+	ColaEspera[0] = "2"
 	listner, err := net.Listen("tcp", ":50051")
 
 	if err != nil {
@@ -146,9 +150,12 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		for LabsCerrados != 4 {
-			print("aqui")
-		}
+		Termino = "1"
+		/*
+			for LabsCerrados != 4 {
+				time.Sleep(1 * time.Second)
+			}
+		*/
 		os.Exit(1)
 	}()
 
