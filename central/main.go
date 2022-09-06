@@ -1,8 +1,6 @@
 package main
 
 import (
-	//No estoy seguro
-
 	"fmt" // Para imprimir
 	"net"
 
@@ -59,20 +57,19 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		for ColaEspera[0] != nroLab || EquiposDisponibles == 0 {
 		} // CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
 		EquiposDisponibles -= 1
+		//Eliminar el dato de cabeza de la cola
 
-		//PUEDE HABER PROBLEMAS DE CONCURRENCIA ACA
 		//Enviar Ayuda
 		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 
-		//Falta hacer un delete del primer objeto aqui. Como un pull de una cola
-
-		//Esperar respuesta de situacion de lab
+		//Realizando battalla. Esperar respuesta de situacion de lab
 		for situacion, _ = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, _ = stream.Recv() {
 			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 			time.Sleep(5 * time.Second)
 			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 		}
+		//Equipo listo. Recibiendo al equipo
 		fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 		fmt.Println("Retorno a Central Escuadra " + nroEscuadra + ", Conexion Laboratorio " + nroLab + " Cerrada")
 		EquiposDisponibles += 1
@@ -156,8 +153,4 @@ func main() {
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())
 	}
-
-	//Cambiar ciclo para que se repita hasta senal de termino
 }
-
-//test

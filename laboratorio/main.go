@@ -101,25 +101,20 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 		nro_escuadron = situacion.NroEscuadra
 		fmt.Println("Llega escuadron " + nro_escuadron + ", conteniendo estallido")
 
+		// Comienza batalla
 		for resolucion = CalcularResolucion(); resolucion == "NO LISTO"; resolucion = CalcularResolucion() {
 			fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-			stream.Send(&pb.SituacionResp{Resuelta: resolucion})
+			stream.Send(&pb.SituacionResp{Resuelta: resolucion}) // Puede que de problemas con el campo no incluido
 			_, _ = stream.Recv()
 		}
+		//Termina batalla. Devolviendo equipo
 		fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-		stream.Send(&pb.SituacionResp{Resuelta: resolucion})
+		stream.Send(&pb.SituacionResp{Resuelta: resolucion}) // Mismo problema de campo no incluido
 		stream.CloseSend()
 		fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
 	}
 
 }
-
-func EsperarAyuda(client pb.centralServiceClient) string {
-	var respuesta *pb.AyudaResp
-	respuesta, _ = client.EsperarAyuda(context.Background(), &pb.AyudaReq{Ayuda: "1"})
-	return respuesta.Escuadron
-}
-
 func DarNumeroLab(ip string, puerto string) string {
 	return "2"
 }
@@ -137,7 +132,7 @@ func main() {
 	ip_Central := "localhost" //Colocar valores para esto
 	port_Central := "50051"
 
-	nro_lab := DarNumeroLab(ip_lab, port_lab)
+	nro_lab := DarNumeroLab(ip_lab, port_lab) //Falta definir como le damos los nombres a los labs
 
 	//Enviar mensaje con Rabbit. Esperar respuesta...
 
