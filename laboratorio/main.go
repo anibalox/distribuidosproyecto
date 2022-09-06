@@ -148,7 +148,9 @@ func main() {
 	go ComunicarseConCentral(serviceClient, nro_lab)
 
 	stream, _ := serviceClient.Terminar(context.Background())
-	_, _ = stream.Recv()                   // Recibir senal de termino
+	_, _ = stream.Recv() // Recibir senal de termino
+	fmt.Println("Llego senal de termino")
 	stream.Send(&pb.Termino{Termino: "1"}) // Enviar Confirmacion
+	fmt.Println("Cerrando y enviando senal a central")
 	os.Exit(1)
 }

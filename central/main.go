@@ -25,7 +25,7 @@ import (
 )
 
 var EquiposDisponibles int
-var ColaEspera [4]string
+var ColaEspera = make([]string, 0) //var ColaEspera [4]string
 var Termino string
 var LabsCerrados int
 
@@ -39,6 +39,7 @@ func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
 	}
 	stream.Send(&pb.Termino{Termino: "1"})
 	_, _ = stream.Recv()
+	fmt.Println("Respondio uno de los labs la senal de termino")
 	LabsCerrados += 1
 	return nil
 }
@@ -59,7 +60,9 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		fmt.Println(EquiposDisponibles)
 		for ColaEspera[0] != nroLab || EquiposDisponibles == 0 {
 			time.Sleep(1 * time.Second)
-		} // CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
+
+		}
+		// CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
 		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		EquiposDisponibles -= 1
 		//Eliminar el dato de cabeza de la cola
@@ -117,20 +120,30 @@ func rabbit() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	//var forever chan struct{}
+	for d := range msgs {
+		log.Printf("Received a message: %s", d.Body)
+		ColaEspera = enqueue(ColaEspera, string(d.Body))
 
-	go func() {
-		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
-		}
-	}()
+	}
+}
 
-	//log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	//<-forever
+func enqueue(queue []string, element string) []string {
+	queue = append(queue, element) // Simply append to enqueue.
+	fmt.Println("Enqueued:", element)
+	return queue
+}
 
+func dequeue(queue []string) (string, []string) {
+	element := queue[0] // The first element is the one to be dequeued.
+	if len(queue) == 1 {
+		var tmp = []string{}
+		return element, tmp
+	}
+	return element, queue[1:] // Slice off the element once it is dequeued.
 }
 
 func main() {
+	var forever chan struct{}
 
 	Termino = "0"
 	LabsCerrados = 0
@@ -151,15 +164,16 @@ func main() {
 	go func() {
 		<-c
 		Termino = "1"
-		/*
-			for LabsCerrados != 4 {
-				time.Sleep(1 * time.Second)
-			}
-		*/
+		for LabsCerrados != 1 {
+			time.Sleep(1 * time.Second)
+		}
+		fmt.Println("Terminando central")
 		os.Exit(1)
 	}()
 
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())
 	}
+
+	<-forever
 }
