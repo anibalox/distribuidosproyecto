@@ -35,6 +35,7 @@ type server struct {
 
 func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
 	for Termino == "0" {
+		println("termino")
 	}
 	stream.Send(&pb.Termino{Termino: "1"})
 	_, _ = stream.Recv()
