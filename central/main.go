@@ -59,13 +59,13 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		fmt.Println(EquiposDisponibles)
 		for primeroEnCola(ColaEspera) != nroLab || EquiposDisponibles == 0 {
 			time.Sleep(1 * time.Second)
-			fmt.Println("---->aquí")
 		}
 		// CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
 		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		EquiposDisponibles -= 1
+		fmt.Println("ColaEspera antesdeque", ColaEspera)
 		_, ColaEspera := dequeue(ColaEspera)
-		fmt.Println("ColaEspera", ColaEspera)
+		fmt.Println("ColaEspera deque", ColaEspera)
 		fmt.Println(EquiposDisponibles)
 
 		//Enviar Ayuda
@@ -119,12 +119,12 @@ func rabbit() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	go func() {
-		for d := range msgs {
-			log.Printf("Received a message: %s", d.Body)
-			ColaEspera = enqueue(ColaEspera, string(d.Body))
-		}
-	}()
+	//go func() {
+	for d := range msgs {
+		log.Printf("Received a message: %s", d.Body)
+		ColaEspera = enqueue(ColaEspera, string(d.Body))
+	}
+	//}()
 }
 
 func primeroEnCola(ColaEspera []string) string {
@@ -147,15 +147,15 @@ func dequeue(ColaEspera []string) (string, []string) {
 		return element, tmp
 
 	}
-
 	return element, ColaEspera[1:] // Slice off the element once it is dequeued.
 }
 
 func main() {
 	//println(len(ColaEspera))
+	go rabbit()
 	Termino = "0"
 	LabsCerrados = 0
-	go rabbit()
+
 	EquiposDisponibles = 2
 
 	//ColaEspera = append(ColaEspera, "0") //ColaEspera[0] = "2"

@@ -39,7 +39,7 @@ func CalcularResolucion() string {
 
 }
 
-func rabbit() {
+func rabbit(nro_lab string) {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/") //Escribir datos de la central
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -58,7 +58,7 @@ func rabbit() {
 	)
 	failOnError(err, "Failed to declare a queue")
 
-	body := "Hello World!"
+	body := nro_lab
 	err = ch.Publish(
 		"",     // exchange
 		q.Name, // routing key
@@ -94,7 +94,7 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 		fmt.Println("SOS Enviado a Central. Esperando respuesta...")
 
 		//Envia mensaje
-		rabbit()
+		rabbit(nro_lab)
 
 		//Esperar recibir ayuda
 		situacion, _ = stream.Recv()
@@ -110,7 +110,7 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 		//Termina batalla. Devolviendo equipo
 		fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
 		stream.Send(&pb.SituacionResp{Resuelta: resolucion}) // Mismo problema de campo no incluido
-		stream.CloseSend()
+		//stream.CloseSend()
 		fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
 	}
 
