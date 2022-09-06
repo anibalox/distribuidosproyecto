@@ -147,9 +147,8 @@ func main() {
 
 	go ComunicarseConCentral(serviceClient, nro_lab)
 
-	stream, _ := serviceClient.AbrirComunicacion(context.Background())
-	_, _ = stream.Recv()                                    // Recibir senal de termino
-	term, _ := serviceClient.Terminar(context.Background()) //agregado para corregir error en siguiente linea
-	term.Send(&pb.Termino{Termino: "1"})                    // Enviar Confirmacion
+	stream, _ := serviceClient.Terminar(context.Background())
+	_, _ = stream.Recv()                   // Recibir senal de termino
+	stream.Send(&pb.Termino{Termino: "1"}) // Enviar Confirmacion
 	os.Exit(1)
 }
