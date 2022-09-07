@@ -16,7 +16,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var ipCentral = "10.6.46.47"
+var ipCentral = "10.6.46.47" //"localhost"
 
 func CalcularEstallido() string {
 	var resultado string
