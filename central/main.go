@@ -150,7 +150,19 @@ func dequeue(ColaEspera []string) (string, []string) {
 	return element, ColaEspera[1:] // Slice off the element once it is dequeued.
 }
 
+func myIP() string {
+	conn, error := net.Dial("udp", "8.8.8.8:80")
+	if error != nil {
+		fmt.Println(error)
+	}
+	defer conn.Close()
+	ipAddress := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	fmt.Println(ipAddress)
+	return ipAddress
+}
+
 func main() {
+	myIP()
 	//println(len(ColaEspera))
 	//var forever chan struct{}
 	go rabbit()
