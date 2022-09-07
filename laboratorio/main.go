@@ -16,7 +16,8 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var ipCentral = "10.6.46.47" //"localhost" //
+//var ipCentral = "10.6.46.47"
+var ipCentral = "localhost"
 
 func CalcularEstallido() string {
 	var resultado string
@@ -42,7 +43,7 @@ func CalcularResolucion() string {
 }
 
 func rabbit(nro_lab string) {
-	conn, err := amqp.Dial("amqp://test:test@" + ipCentral + ":5672/") //Escribir datos de la central
+	conn, err := amqp.Dial("amqp://test:test@" + ipCentral + ":5670/") //Escribir datos de la central
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
