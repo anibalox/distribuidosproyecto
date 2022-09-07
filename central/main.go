@@ -35,6 +35,45 @@ type server struct {
 	pb.UnimplementedCentralServiceServer
 }
 
+func rabbit() {
+	conn, err := amqp.Dial("amqp://test:test@localhost:5670/") //conn, err := amqp.Dial("amqp://guest:guest@" + myIP() + ":5672/")
+	failOnError(err, "Failed to connect to RabbitMQ")
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+		"hello", // name
+		false,   // durable
+		false,   // delete when unused
+		false,   // exclusive
+		false,   // no-wait
+		nil,     // arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
+	failOnError(err, "Failed to register a consumer")
+
+	//go func() {
+	for d := range msgs {
+		log.Printf("Received a message: %s", d.Body)
+		println("iteracion rabbit")
+		ColaEspera = enqueue(ColaEspera, string(d.Body))
+	}
+	//}()
+}
+
 func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
 	for Termino == "0" {
 		time.Sleep(1 * time.Second)
@@ -88,44 +127,6 @@ func failOnError(err error, msg string) {
 		log.Panicf("%s: %s", msg, err)
 	}
 }
-func rabbit() {
-	conn, err := amqp.Dial("amqp://test:test@localhost:5670/") //conn, err := amqp.Dial("amqp://guest:guest@" + myIP() + ":5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		"hello", // name
-		false,   // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
-	)
-	failOnError(err, "Failed to declare a queue")
-
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
-	failOnError(err, "Failed to register a consumer")
-
-	//go func() {
-	for d := range msgs {
-		log.Printf("Received a message: %s", d.Body)
-		println("iteracion rabbit")
-		ColaEspera = enqueue(ColaEspera, string(d.Body))
-	}
-	//}()
-}
 
 func primeroEnCola(ColaEspera []string) string {
 	if len(ColaEspera) == 0 {
@@ -150,18 +151,7 @@ func dequeue(ColaEspera []string) (string, []string) {
 	return element, ColaEspera[1:] // Slice off the element once it is dequeued.
 }
 
-func myIP() string {
-	conn, error := net.Dial("udp", "8.8.8.8:80")
-	if error != nil {
-		fmt.Println(error)
-	}
-	defer conn.Close()
-	ipAddress := conn.LocalAddr().(*net.UDPAddr).IP.String()
-	return ipAddress
-}
-
 func main() {
-	myIP()
 	//println(len(ColaEspera))
 	//var forever chan struct{}
 	go rabbit()

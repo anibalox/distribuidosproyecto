@@ -19,6 +19,24 @@ import (
 
 var ipCentral string
 
+func myIP() string {
+	conn, error := net.Dial("udp", "8.8.8.8:80")
+	if error != nil {
+		fmt.Println(error)
+	}
+	defer conn.Close()
+	ipAddress := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	return ipAddress
+}
+
+func centralIPValue() string {
+	ipAddress := myIP()
+	if ipAddress == "10.6.46.48" || ipAddress == "10.6.46.49" || ipAddress == "10.6.46.50" {
+		return "10.6.46.47"
+	}
+	return "localhost"
+}
+
 func rabbit(nro_lab string) {
 	conn, err := amqp.Dial("amqp://test:test@" + ipCentral + ":5670/") //Escribir datos de la central
 	failOnError(err, "Failed to connect to RabbitMQ")
@@ -126,24 +144,6 @@ func failOnError(err error, msg string) {
 	if err != nil {
 		log.Panicf("%s: %s", msg, err)
 	}
-}
-
-func myIP() string {
-	conn, error := net.Dial("udp", "8.8.8.8:80")
-	if error != nil {
-		fmt.Println(error)
-	}
-	defer conn.Close()
-	ipAddress := conn.LocalAddr().(*net.UDPAddr).IP.String()
-	return ipAddress
-}
-
-func centralIPValue() string {
-	ipAddress := myIP()
-	if ipAddress == "10.6.46.48" || ipAddress == "10.6.46.49" || ipAddress == "10.6.46.50" {
-		return "10.6.46.47"
-	}
-	return "localhost"
 }
 
 func main() {
