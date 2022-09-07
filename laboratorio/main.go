@@ -17,9 +17,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var ipCentral = "10.6.46.47"
-
-//var ipCentral = "localhost"
+var ipCentral string
 
 func rabbit(nro_lab string) {
 	conn, err := amqp.Dial("amqp://test:test@" + ipCentral + ":5670/") //Escribir datos de la central
@@ -137,10 +135,22 @@ func myIP() string {
 	}
 	defer conn.Close()
 	ipAddress := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	if ipAddress == "10.6.46.48" || ipAddress == "10.6.46.49" || ipAddress == "10.6.46.50" {
+		println("my ip", ipAddress)
+	}
 	return ipAddress
 }
 
+func centralIPValue() string {
+	ipAddress := myIP()
+	if ipAddress == "10.6.46.48" || ipAddress == "10.6.46.49" || ipAddress == "10.6.46.50" {
+		return "10.6.46.47"
+	}
+	return "localhost"
+}
+
 func main() {
+	ipCentral = centralIPValue()
 
 	rand.Seed(time.Now().UnixNano()) // iniciar semilla
 
