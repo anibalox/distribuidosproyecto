@@ -135,9 +135,6 @@ func myIP() string {
 	}
 	defer conn.Close()
 	ipAddress := conn.LocalAddr().(*net.UDPAddr).IP.String()
-	if ipAddress == "10.6.46.48" || ipAddress == "10.6.46.49" || ipAddress == "10.6.46.50" {
-		println("my ip", ipAddress)
-	}
 	return ipAddress
 }
 
