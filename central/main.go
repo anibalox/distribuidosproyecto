@@ -3,6 +3,7 @@ package main
 import (
 	"fmt" // Para imprimir
 	"net"
+	"sync"
 
 	//Para terminar los programas con un senal
 	"os"
@@ -28,6 +29,7 @@ var EquiposDisponibles int
 var ColaEspera = make([]string, 0) //var ColaEspera [4]string
 var Termino string
 var LabsCerrados int
+var mu sync.Mutex
 
 type server struct {
 	pb.UnimplementedCentralServiceServer
@@ -64,7 +66,9 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		EquiposDisponibles -= 1
 		fmt.Println("ColaEspera antesdeque", ColaEspera)
-		_, ColaEspera := dequeue(ColaEspera)
+		mu.Lock()
+		_, ColaEspera = dequeue(ColaEspera)
+		mu.Unlock()
 		fmt.Println("ColaEspera deque", ColaEspera)
 		fmt.Println(EquiposDisponibles)
 
@@ -122,6 +126,7 @@ func rabbit() {
 	//go func() {
 	for d := range msgs {
 		log.Printf("Received a message: %s", d.Body)
+		println("iteracion rabbit")
 		ColaEspera = enqueue(ColaEspera, string(d.Body))
 	}
 	//}()
@@ -152,6 +157,7 @@ func dequeue(ColaEspera []string) (string, []string) {
 
 func main() {
 	//println(len(ColaEspera))
+	//var forever chan struct{}
 	go rabbit()
 	Termino = "0"
 	LabsCerrados = 0
@@ -185,4 +191,5 @@ func main() {
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())
 	}
+	//<-forever
 }

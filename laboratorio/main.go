@@ -71,6 +71,7 @@ func rabbit(nro_lab string) {
 	failOnError(err, "Failed to publish a message")
 	log.Printf(" [x] Sent %s\n", body)
 }
+
 func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 
 	var resolucion string
