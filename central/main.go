@@ -176,11 +176,11 @@ func main() {
 	go func() {
 		<-c
 		Termino = "1"
-		/*
-			for LabsCerrados != 4 {
-				time.Sleep(1 * time.Second)
-			}
-		*/
+
+		for LabsCerrados != 4 {
+			time.Sleep(1 * time.Second)
+		}
+
 		os.Exit(1)
 	}()
 
