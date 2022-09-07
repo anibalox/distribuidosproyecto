@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"net"
 	"os"
 	"time"
 
@@ -16,31 +17,9 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-//var ipCentral = "10.6.46.47"
-var ipCentral = "localhost"
+var ipCentral = "10.6.46.47"
 
-func CalcularEstallido() string {
-	var resultado string
-	if rand.Float64() <= 0.8 {
-		resultado = "ESTALLIDO"
-	} else {
-		resultado = "OK"
-	}
-
-	return resultado
-}
-
-func CalcularResolucion() string {
-	var resultado string
-	if rand.Float64() <= 0.6 {
-		resultado = "LISTO"
-	} else {
-		resultado = "NO LISTO"
-	}
-
-	return resultado
-
-}
+//var ipCentral = "localhost"
 
 func rabbit(nro_lab string) {
 	conn, err := amqp.Dial("amqp://test:test@" + ipCentral + ":5670/") //Escribir datos de la central
@@ -73,6 +52,28 @@ func rabbit(nro_lab string) {
 		})
 	failOnError(err, "Failed to publish a message")
 	log.Printf(" [x] Sent %s\n", body)
+}
+
+func CalcularEstallido() string {
+	var resultado string
+	if rand.Float64() <= 0.8 {
+		resultado = "ESTALLIDO"
+	} else {
+		resultado = "OK"
+	}
+
+	return resultado
+}
+
+func CalcularResolucion() string {
+	var resultado string
+	if rand.Float64() <= 0.6 {
+		resultado = "LISTO"
+	} else {
+		resultado = "NO LISTO"
+	}
+
+	return resultado
 }
 
 func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
@@ -117,8 +118,8 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 		//stream.CloseSend()
 		fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
 	}
-
 }
+
 func DarNumeroLab(ip string, puerto string) string {
 	return "2"
 }
@@ -129,14 +130,24 @@ func failOnError(err error, msg string) {
 	}
 }
 
+func myIP() string {
+	conn, error := net.Dial("udp", "8.8.8.8:80")
+	if error != nil {
+		fmt.Println(error)
+	}
+	defer conn.Close()
+	ipAddress := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	return ipAddress
+}
+
 func main() {
 
 	rand.Seed(time.Now().UnixNano()) // iniciar semilla
 
 	port_Central := "50051"
-	ip_lab := "192.168."
-	port_lab := "1234"
-	nro_lab := DarNumeroLab(ip_lab, port_lab) //Falta definir como le damos los nombres a los labs
+	//ip_lab := "192.168."
+	//port_lab := "1234"
+	nro_lab := myIP() //nro_lab := DarNumeroLab(ip_lab, port_lab) //Falta definir como le damos los nombres a los labs
 
 	//Enviar mensaje con Rabbit. Esperar respuesta...
 
