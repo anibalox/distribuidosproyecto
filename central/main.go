@@ -57,20 +57,15 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 	for {
 		//Esperar enviar mensaje hasta disponibilidad de equipos y que este Lab sea el primero en la cola
-		fmt.Println("ColaEspera", ColaEspera)
-		fmt.Println(EquiposDisponibles)
 		for primeroEnCola(ColaEspera) != nroLab || EquiposDisponibles == 0 {
 			time.Sleep(1 * time.Second)
 		}
-		// CAMBIAR ESTO DEPENDIENDO DE COMO FUNCIONE LA COLA
+
 		nroEscuadra = strconv.Itoa(EquiposDisponibles)
 		EquiposDisponibles -= 1
-		fmt.Println("ColaEspera antesdeque", ColaEspera)
 		mu.Lock()
 		_, ColaEspera = dequeue(ColaEspera)
 		mu.Unlock()
-		fmt.Println("ColaEspera deque", ColaEspera)
-		fmt.Println(EquiposDisponibles)
 
 		//Enviar Ayuda
 		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
