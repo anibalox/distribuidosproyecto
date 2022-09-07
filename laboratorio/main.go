@@ -132,7 +132,6 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano()) // iniciar semilla
 
-	ip_Central := "localhost" //Colocar valores para esto
 	port_Central := "50051"
 	ip_lab := "192.168."
 	port_lab := "1234"
@@ -140,7 +139,7 @@ func main() {
 
 	//Enviar mensaje con Rabbit. Esperar respuesta...
 
-	conn, err := grpc.Dial(ip_Central+":"+port_Central, grpc.WithInsecure()) //grpc.WithInsecure())
+	conn, err := grpc.Dial(ipCentral+":"+port_Central, grpc.WithInsecure()) //grpc.WithInsecure())
 
 	if err != nil {
 		panic("cannot connect with server " + err.Error())
