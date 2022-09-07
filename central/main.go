@@ -20,13 +20,11 @@ import (
 	"log"
 	//Tambien rabbit
 	amqp "github.com/rabbitmq/amqp091-go"
-
 	//Para convertir los EquiposDisponibles en string
-	"strconv"
 )
 
-var EquiposDisponibles int
-var ColaEspera = make([]string, 0) //var ColaEspera [4]string
+var EquiposDisponibles = make([]string, 0) //var EquiposDisponibles int
+var ColaEspera = make([]string, 0)         //var ColaEspera [4]string
 var Termino string
 var LabsCerrados int
 var mu sync.Mutex
@@ -96,12 +94,12 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 	for {
 		//Esperar enviar mensaje hasta disponibilidad de equipos y que este Lab sea el primero en la cola
-		for primeroEnCola(ColaEspera) != nroLab || EquiposDisponibles == 0 {
+		for primeroEnCola(ColaEspera) != nroLab || len(EquiposDisponibles) == 0 { //EquiposDisponibles == 0 {
 			time.Sleep(1 * time.Second)
 		}
 
-		nroEscuadra = strconv.Itoa(EquiposDisponibles)
-		EquiposDisponibles -= 1
+		nroEscuadra, EquiposDisponibles = dequeue(EquiposDisponibles) //strconv.Itoa(EquiposDisponibles)
+		//EquiposDisponibles -= 1
 		mu.Lock()
 		_, ColaEspera = dequeue(ColaEspera)
 		mu.Unlock()
@@ -118,7 +116,8 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		//Equipo listo. Recibiendo al equipo
 		fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 		fmt.Println("Retorno a Central Escuadra " + nroEscuadra + ", Conexion Laboratorio " + nroLab + " Cerrada")
-		EquiposDisponibles += 1
+		EquiposDisponibles = enqueue(EquiposDisponibles, nroEscuadra)
+		//EquiposDisponibles += 1
 	}
 }
 
@@ -158,7 +157,8 @@ func main() {
 	Termino = "0"
 	LabsCerrados = 0
 
-	EquiposDisponibles = 2
+	EquiposDisponibles = append(EquiposDisponibles, "1")
+	EquiposDisponibles = append(EquiposDisponibles, "2")
 
 	//ColaEspera = append(ColaEspera, "0") //ColaEspera[0] = "2"
 	//fmt.Println(ColaEspera[0])
