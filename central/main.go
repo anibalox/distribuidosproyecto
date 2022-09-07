@@ -98,9 +98,8 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 			time.Sleep(1 * time.Second)
 		}
 
-		nroEscuadra, EquiposDisponibles = dequeue(EquiposDisponibles) //strconv.Itoa(EquiposDisponibles)
-		//EquiposDisponibles -= 1
 		mu.Lock()
+		nroEscuadra, EquiposDisponibles = dequeue(EquiposDisponibles) //strconv.Itoa(EquiposDisponibles)
 		_, ColaEspera = dequeue(ColaEspera)
 		mu.Unlock()
 
