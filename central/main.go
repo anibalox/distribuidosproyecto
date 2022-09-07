@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt" // Para imprimir
+	"io"
 	"net"
+	"strconv"
 	"sync"
 
 	//Para terminar los programas con un senal
@@ -28,6 +30,8 @@ var ColaEspera = make([]string, 0)         //var ColaEspera [4]string
 var Termino string
 var LabsCerrados int
 var mu sync.Mutex
+var mu2 sync.Mutex
+var f *os.File
 
 type server struct {
 	pb.UnimplementedCentralServiceServer
@@ -87,6 +91,8 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	var situacion *pb.SituacionResp
 	var nroLab string
 	var nroEscuadra string
+	var err error
+	var cantidadMensajes int
 
 	//Recibir mensaje de introduccion
 	situacion, _ = stream.Recv()
@@ -107,11 +113,28 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 
 		//Realizando battalla. Esperar respuesta de situacion de lab
-		for situacion, _ = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, _ = stream.Recv() {
+		cantidadMensajes = 0
+		for situacion, err = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, err = stream.Recv() {
+			//Tal vez esto arregle el problema de siempre
+			if err != nil {
+				if err == io.EOF {
+					return err
+				}
+				return err
+			}
+			//Hasta aqui
+
 			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
+			cantidadMensajes += 1
 			time.Sleep(5 * time.Second)
 			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 		}
+		//n3, err := f.WriteString("writes\n")
+
+		mu2.Lock()
+		f.WriteString("Lab" + nroLab + ";" + strconv.Itoa(cantidadMensajes)) //CAMBIAR nroLab a numero no IP
+		mu2.Unlock()
+
 		//Equipo listo. Recibiendo al equipo
 		fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 		fmt.Println("Retorno a Central Escuadra " + nroEscuadra + ", Conexion Laboratorio " + nroLab + " Cerrada")
@@ -167,6 +190,8 @@ func main() {
 		panic("cannot create tcp connection" + err.Error())
 	}
 
+	f, err = os.Create("SOLICITUDES")
+
 	serv := grpc.NewServer()
 	pb.RegisterCentralServiceServer(serv, &server{})
 
@@ -179,6 +204,7 @@ func main() {
 		for LabsCerrados != 4 {
 			time.Sleep(1 * time.Second)
 		}
+		f.Close()
 
 		os.Exit(1)
 	}()
