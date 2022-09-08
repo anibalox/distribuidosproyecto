@@ -117,7 +117,9 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 		//Enviar Ayuda
 		if Termino == "1" {
-			return nil
+			for {
+				time.Sleep(30 * time.Second)
+			}
 		}
 		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 
