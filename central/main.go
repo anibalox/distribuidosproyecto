@@ -131,7 +131,9 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 			cantidadMensajes += 1
 			time.Sleep(5 * time.Second)
 			if Termino == "1" {
-				return nil
+				for {
+					time.Sleep(30 * time.Second)
+				}
 			}
 			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 		}
@@ -199,10 +201,11 @@ func main() {
 	go func() {
 		<-c
 		Termino = "1"
-
+		fmt.Println("Esperando confirmacion de cierre de los laboratorios")
 		for LabsConectados != 0 {
 			time.Sleep(1 * time.Second)
 		}
+		fmt.Println("Se cerraron todos los laboratorios. Cerrando ejecucion")
 		f.Close()
 
 		os.Exit(1)
