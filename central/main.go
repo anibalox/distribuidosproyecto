@@ -110,6 +110,9 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		mu.Unlock()
 
 		//Enviar Ayuda
+		if Termino == "1" {
+			break
+		}
 		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 
 		//Realizando battalla. Esperar respuesta de situacion de lab
@@ -119,9 +122,10 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 			cantidadMensajes += 1
 			time.Sleep(5 * time.Second)
-			if Termino != "1" {
-				stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
+			if Termino == "1" {
+				break
 			}
+			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 		}
 		//n3, err := f.WriteString("writes\n")
 
