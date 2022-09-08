@@ -119,9 +119,8 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 			cantidadMensajes += 1
 			time.Sleep(5 * time.Second)
-			err = stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
-			if err != nil {
-				return err
+			if err == nil {
+				stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 			}
 		}
 		//n3, err := f.WriteString("writes\n")
