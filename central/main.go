@@ -31,6 +31,12 @@ var LabsConectados int
 var mu sync.Mutex
 var mu2 sync.Mutex
 var f *os.File
+var ipToNumber = map[string]string{
+	"10.6.46.47": "1",
+	"10.6.46.48": "2",
+	"10.6.46.49": "3",
+	"10.6.46.50": "4",
+}
 
 type server struct {
 	pb.UnimplementedCentralServiceServer
@@ -70,7 +76,7 @@ func rabbit() {
 	for d := range msgs {
 		log.Printf("Received a message: %s", d.Body)
 		println("iteracion rabbit")
-		ColaEspera = enqueue(ColaEspera, string(d.Body))
+		ColaEspera = enqueue(ColaEspera, ipToNumber[string(d.Body)]) //ColaEspera = enqueue(ColaEspera, string(d.Body))
 	}
 	//}()
 }
@@ -96,7 +102,7 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	LabsConectados += 1
 	//Recibir mensaje de introduccion
 	situacion, _ = stream.Recv()
-	nroLab = situacion.NroLab
+	nroLab = ipToNumber[situacion.NroLab]
 
 	for {
 		//Esperar enviar mensaje hasta disponibilidad de equipos y que este Lab sea el primero en la cola
@@ -171,8 +177,6 @@ func dequeue(ColaEspera []string) (string, []string) {
 }
 
 func main() {
-	//println(len(ColaEspera))
-	//var forever chan struct{}
 	go rabbit()
 	Termino = "0"
 	LabsConectados = 0
@@ -180,8 +184,6 @@ func main() {
 	EquiposDisponibles = append(EquiposDisponibles, "1")
 	EquiposDisponibles = append(EquiposDisponibles, "2")
 
-	//ColaEspera = append(ColaEspera, "0") //ColaEspera[0] = "2"
-	//fmt.Println(ColaEspera[0])
 	listner, err := net.Listen("tcp", ":50051")
 
 	if err != nil {
@@ -210,5 +212,4 @@ func main() {
 	if err = serv.Serve(listner); err != nil {
 		panic("cannot initialize the server" + err.Error())
 	}
-	//<-forever
 }
