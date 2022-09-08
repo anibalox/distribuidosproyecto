@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt" // Para imprimir
-	"io"
 	"net"
 	"strconv"
 	"sync"
@@ -28,7 +27,7 @@ import (
 var EquiposDisponibles = make([]string, 0) //var EquiposDisponibles int
 var ColaEspera = make([]string, 0)         //var ColaEspera [4]string
 var Termino string
-var LabsCerrados int
+var LabsConectados int
 var mu sync.Mutex
 var mu2 sync.Mutex
 var f *os.File
@@ -82,7 +81,7 @@ func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
 	}
 	stream.Send(&pb.Termino{Termino: "1"})
 	_, _ = stream.Recv()
-	LabsCerrados += 1
+	LabsConectados -= 1
 	return nil
 }
 
@@ -94,6 +93,7 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	var err error
 	var cantidadMensajes int
 
+	LabsConectados += 1
 	//Recibir mensaje de introduccion
 	situacion, _ = stream.Recv()
 	nroLab = situacion.NroLab
@@ -115,24 +115,19 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		//Realizando battalla. Esperar respuesta de situacion de lab
 		cantidadMensajes = 0
 		for situacion, err = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, err = stream.Recv() {
-			//Tal vez esto arregle el problema de siempre
-			if err != nil {
-				if err == io.EOF {
-					return err
-				}
-				return err
-			}
-			//Hasta aqui
 
 			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 			cantidadMensajes += 1
 			time.Sleep(5 * time.Second)
-			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
+			err = stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
+			if err != nil {
+				return err
+			}
 		}
 		//n3, err := f.WriteString("writes\n")
 
 		mu2.Lock()
-		f.WriteString("Lab" + nroLab + ";" + strconv.Itoa(cantidadMensajes)) //CAMBIAR nroLab a numero no IP
+		f.WriteString("Lab" + nroLab + ";" + strconv.Itoa(cantidadMensajes) + "\n") //CAMBIAR nroLab a numero no IP
 		mu2.Unlock()
 
 		//Equipo listo. Recibiendo al equipo
@@ -177,7 +172,7 @@ func main() {
 	//var forever chan struct{}
 	go rabbit()
 	Termino = "0"
-	LabsCerrados = 0
+	LabsConectados = 0
 
 	EquiposDisponibles = append(EquiposDisponibles, "1")
 	EquiposDisponibles = append(EquiposDisponibles, "2")
@@ -190,7 +185,7 @@ func main() {
 		panic("cannot create tcp connection" + err.Error())
 	}
 
-	f, err = os.Create("SOLICITUDES")
+	f, _ = os.Create("SOLICITUDES")
 
 	serv := grpc.NewServer()
 	pb.RegisterCentralServiceServer(serv, &server{})
@@ -201,7 +196,7 @@ func main() {
 		<-c
 		Termino = "1"
 
-		for LabsCerrados != 4 {
+		for LabsConectados != 0 {
 			time.Sleep(1 * time.Second)
 		}
 		f.Close()
