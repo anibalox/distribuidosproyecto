@@ -79,6 +79,7 @@ func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
 	for Termino == "0" {
 		time.Sleep(1 * time.Second)
 	}
+	time.Sleep(2 * time.Second)
 	stream.Send(&pb.Termino{Termino: "1"})
 	_, _ = stream.Recv()
 	LabsConectados -= 1
