@@ -90,7 +90,6 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	var situacion *pb.SituacionResp
 	var nroLab string
 	var nroEscuadra string
-	var err error
 	var cantidadMensajes int
 
 	LabsConectados += 1
@@ -114,12 +113,12 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 		//Realizando battalla. Esperar respuesta de situacion de lab
 		cantidadMensajes = 0
-		for situacion, err = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, err = stream.Recv() {
+		for situacion, _ = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, _ = stream.Recv() {
 
 			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 			cantidadMensajes += 1
 			time.Sleep(5 * time.Second)
-			if err == nil {
+			if Termino != "1" {
 				stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 			}
 		}
