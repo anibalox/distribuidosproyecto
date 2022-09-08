@@ -111,7 +111,7 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 		//Enviar Ayuda
 		if Termino == "1" {
-			break
+			return nil
 		}
 		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 
@@ -123,7 +123,7 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 			cantidadMensajes += 1
 			time.Sleep(5 * time.Second)
 			if Termino == "1" {
-				break
+				return nil
 			}
 			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 		}
