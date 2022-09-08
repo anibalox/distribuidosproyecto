@@ -11,7 +11,6 @@ import (
 	pb "github.com/anibalox/distribuidosproyecto/proto"
 	"google.golang.org/grpc"
 
-	//rabbit
 	"log"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -67,7 +66,6 @@ func rabbit(nro_lab string) {
 			Body:        []byte(body),
 		})
 	failOnError(err, "Failed to publish a message")
-	log.Printf(" [x] Sent %s\n", body)
 }
 
 func CalcularEstallido() string {
@@ -99,7 +97,7 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 	var situacion *pb.SituacionReq
 	var estallido string
 
-	stream, _ := client.AbrirComunicacion(context.Background()) //stream, err := client.AbrirComunicacion(context.Background())
+	stream, _ := client.AbrirComunicacion(context.Background())
 
 	//Mensaje de introduccion
 	stream.Send(&pb.SituacionResp{Resuelta: "NO LISTO", NroLab: nro_lab})
@@ -125,19 +123,14 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 		// Comienza batalla
 		for resolucion = CalcularResolucion(); resolucion == "NO LISTO"; resolucion = CalcularResolucion() {
 			fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-			stream.Send(&pb.SituacionResp{Resuelta: resolucion}) // Puede que de problemas con el campo no incluido
+			stream.Send(&pb.SituacionResp{Resuelta: resolucion})
 			_, _ = stream.Recv()
 		}
 		//Termina batalla. Devolviendo equipo
 		fmt.Println("Revisando Estado Escuadron: [" + resolucion + "]")
-		stream.Send(&pb.SituacionResp{Resuelta: resolucion}) // Mismo problema de campo no incluido
-		//stream.CloseSend()
+		stream.Send(&pb.SituacionResp{Resuelta: resolucion})
 		fmt.Println("Estallido contenido. Escuadron " + nro_escuadron + " Retornando")
 	}
-}
-
-func DarNumeroLab(ip string, puerto string) string {
-	return "2"
 }
 
 func failOnError(err error, msg string) {
@@ -152,13 +145,10 @@ func main() {
 	rand.Seed(time.Now().UnixNano()) // iniciar semilla
 
 	port_Central := "50051"
-	//ip_lab := "192.168."
-	//port_lab := "1234"
-	nro_lab := myIP() //nro_lab := DarNumeroLab(ip_lab, port_lab) //Falta definir como le damos los nombres a los labs
 
-	//Enviar mensaje con Rabbit. Esperar respuesta...
+	nro_lab := myIP()
 
-	conn, err := grpc.Dial(ipCentral+":"+port_Central, grpc.WithInsecure()) //grpc.WithInsecure())
+	conn, err := grpc.Dial(ipCentral+":"+port_Central, grpc.WithInsecure())
 
 	if err != nil {
 		panic("cannot connect with server " + err.Error())

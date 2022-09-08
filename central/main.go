@@ -24,8 +24,8 @@ import (
 	//Para convertir los EquiposDisponibles en string
 )
 
-var EquiposDisponibles = make([]string, 0) //var EquiposDisponibles int
-var ColaEspera = make([]string, 0)         //var ColaEspera [4]string
+var EquiposDisponibles = make([]string, 0)
+var ColaEspera = make([]string, 0)
 var Termino string
 var LabsConectados int
 var mu sync.Mutex
@@ -43,7 +43,7 @@ type server struct {
 }
 
 func rabbit() {
-	conn, err := amqp.Dial("amqp://test:test@localhost:5670/") //conn, err := amqp.Dial("amqp://guest:guest@" + myIP() + ":5672/")
+	conn, err := amqp.Dial("amqp://test:test@localhost:5670/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -72,13 +72,11 @@ func rabbit() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	//go func() {
 	for d := range msgs {
-		log.Printf("Received a message: %s", d.Body)
-		println("iteracion rabbit")
-		ColaEspera = enqueue(ColaEspera, ipToNumber[string(d.Body)]) //ColaEspera = enqueue(ColaEspera, string(d.Body))
+		ColaEspera = enqueue(ColaEspera, ipToNumber[string(d.Body)])
+		fmt.Println("Mensaje asincrono de laboratorio " + ipToNumber[string(d.Body)] + " leido")
 	}
-	//}()
+
 }
 
 func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
@@ -100,18 +98,19 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	var cantidadMensajes int
 
 	LabsConectados += 1
+
 	//Recibir mensaje de introduccion
 	situacion, _ = stream.Recv()
 	nroLab = ipToNumber[situacion.NroLab]
 
 	for {
 		//Esperar enviar mensaje hasta disponibilidad de equipos y que este Lab sea el primero en la cola
-		for primeroEnCola(ColaEspera) != nroLab || len(EquiposDisponibles) == 0 { //EquiposDisponibles == 0 {
+		for primeroEnCola(ColaEspera) != nroLab || len(EquiposDisponibles) == 0 {
 			time.Sleep(1 * time.Second)
 		}
 
 		mu.Lock()
-		nroEscuadra, EquiposDisponibles = dequeue(EquiposDisponibles) //strconv.Itoa(EquiposDisponibles)
+		nroEscuadra, EquiposDisponibles = dequeue(EquiposDisponibles)
 		_, ColaEspera = dequeue(ColaEspera)
 		mu.Unlock()
 
@@ -121,6 +120,7 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 				time.Sleep(30 * time.Second)
 			}
 		}
+		fmt.Println("Se envia escuadron " + nroEscuadra + " a laboratorio " + nroLab)
 		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 
 		//Realizando battalla. Esperar respuesta de situacion de lab
@@ -135,17 +135,15 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 			}
 			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
 		}
-		//n3, err := f.WriteString("writes\n")
 
 		mu2.Lock()
-		f.WriteString("Lab" + nroLab + ";" + strconv.Itoa(cantidadMensajes) + "\n") //CAMBIAR nroLab a numero no IP
+		f.WriteString("Lab" + nroLab + ";" + strconv.Itoa(cantidadMensajes) + "\n")
 		mu2.Unlock()
 
 		//Equipo listo. Recibiendo al equipo
 		fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 		fmt.Println("Retorno a Central Escuadra " + nroEscuadra + ", Conexion Laboratorio " + nroLab + " Cerrada")
 		EquiposDisponibles = enqueue(EquiposDisponibles, nroEscuadra)
-		//EquiposDisponibles += 1
 	}
 }
 
@@ -163,19 +161,18 @@ func primeroEnCola(ColaEspera []string) string {
 }
 
 func enqueue(ColaEspera []string, element string) []string {
-	ColaEspera = append(ColaEspera, element) // Simply append to enqueue.
-	fmt.Println("Enqueued:", element)
+	ColaEspera = append(ColaEspera, element)
 	return ColaEspera
 }
 
 func dequeue(ColaEspera []string) (string, []string) {
-	element := ColaEspera[0] // The first element is the one to be dequeued.
+	element := ColaEspera[0]
 	if len(ColaEspera) == 1 {
 		var tmp = []string{}
 		return element, tmp
 
 	}
-	return element, ColaEspera[1:] // Slice off the element once it is dequeued.
+	return element, ColaEspera[1:]
 }
 
 func main() {
