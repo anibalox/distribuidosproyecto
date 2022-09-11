@@ -151,29 +151,32 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 
 		//Enviar Ayuda
 		fmt.Println("Se envia escuadron " + nroEscuadra + " a laboratorio " + nroLab)
-		if Termino == "1" {
-			for {
-				time.Sleep(30 * time.Second)
+		/*
+			if Termino == "1" {
+				for {
+					time.Sleep(30 * time.Second)
+				}
+			} else {
+				//stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
+				if err := stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra}); err != nil {
+					return err
+				}
 			}
-		} else {
-			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
+		*/
+		if err := stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra}); err != nil {
+			return err
 		}
 
 		//Realizando battalla. Esperar respuesta de situacion de lab
 		cantidadMensajes = 0
 
 		for situacion, _ = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, _ = stream.Recv() {
-
 			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
 			cantidadMensajes += 1
 			time.Sleep(5 * time.Second)
 
-			if Termino == "1" {
-				for {
-					time.Sleep(30 * time.Second)
-				}
-			} else {
-				stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
+			if err := stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra}); err != nil {
+				return err
 			}
 		}
 
