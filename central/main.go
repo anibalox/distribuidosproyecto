@@ -4,7 +4,7 @@ import (
 	"fmt" // Para imprimir
 	"net"
 	"strconv"
-	"sync"
+	"sync" //Para coordinar
 
 	//Para terminar los programas con un senal
 	"os"
@@ -41,6 +41,18 @@ var ipToNumber = map[string]string{
 type server struct {
 	pb.UnimplementedCentralServiceServer
 }
+
+/*
+func rabbit
+
+param: none
+
+return: none
+
+Esta funcion inicia el rabbit y recolecta los mensajes que van llegando por este
+
+
+*/
 
 func rabbit() {
 	conn, err := amqp.Dial("amqp://test:test@localhost:5670/")
@@ -79,17 +91,37 @@ func rabbit() {
 
 }
 
+/*
+func Terminar
+
+param: stream pb.CentralService_TerminarServer
+
+return: error
+
+Esta funcion es la encargada de enviar las senales de termino a los laboratorios que llamaron
+al metodo Terminar de la central
+*/
+
 func (s *server) Terminar(stream pb.CentralService_TerminarServer) error {
 	for Termino == "0" {
 		time.Sleep(1 * time.Second)
 	}
-	time.Sleep(2 * time.Second)
 	stream.Send(&pb.Termino{Termino: "1"})
 	_, _ = stream.Recv()
 	LabsConectados -= 1
 	return nil
 }
 
+/*
+func AbrirComunicacion
+
+param: stream pb.CentralService_AbrirComunicacionServer
+
+return: error
+
+Esta funcion es la encargada de hacer el intercambio de mensajes por cada estallido y resolucion en los
+laboratorios.
+*/
 func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionServer) error {
 
 	var situacion *pb.SituacionResp
@@ -114,28 +146,38 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 		_, ColaEspera = dequeue(ColaEspera)
 		mu.Unlock()
 
+		//Se ocupan los if Termino para cuando los labs se cierren, central no envie mensajes a canales
+		// no existentes y de error de Segmentation Fault
+
 		//Enviar Ayuda
-		if Termino == "1" {
-			for {
-				time.Sleep(30 * time.Second)
-			}
-		}
 		fmt.Println("Se envia escuadron " + nroEscuadra + " a laboratorio " + nroLab)
-		stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
-
-		//Realizando battalla. Esperar respuesta de situacion de lab
-		cantidadMensajes = 0
-		for situacion, _ = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, _ = stream.Recv() {
-
-			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
-			cantidadMensajes += 1
-			time.Sleep(5 * time.Second)
+		/*
 			if Termino == "1" {
 				for {
 					time.Sleep(30 * time.Second)
 				}
+			} else {
+				//stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
+				if err := stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra}); err != nil {
+					return err
+				}
 			}
-			stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra})
+		*/
+		if err := stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra}); err != nil {
+			return err
+		}
+
+		//Realizando battalla. Esperar respuesta de situacion de lab
+		cantidadMensajes = 0
+
+		for situacion, _ = stream.Recv(); situacion.Resuelta == "NO LISTO"; situacion, _ = stream.Recv() {
+			fmt.Println("Estatus Escuadra " + nroEscuadra + " : [" + situacion.Resuelta + "]")
+			cantidadMensajes += 1
+			time.Sleep(5 * time.Second)
+
+			if err := stream.Send(&pb.SituacionReq{NroEscuadra: nroEscuadra}); err != nil {
+				return err
+			}
 		}
 
 		mu2.Lock()
@@ -149,11 +191,30 @@ func (s *server) AbrirComunicacion(stream pb.CentralService_AbrirComunicacionSer
 	}
 }
 
+/*
+func failOnError
+
+param: err error, msg string
+
+return: none
+
+Esta funcion imprime los errores que se le entregan con algun mensaje extra
+*/
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Panicf("%s: %s", msg, err)
 	}
 }
+
+/*
+func primeroEnCola
+
+param: ColaEspera []string
+
+return: string
+
+Esta funcion devuelve el primer dato de la cola que le entreguen sin delecion
+*/
 
 func primeroEnCola(ColaEspera []string) string {
 	if len(ColaEspera) == 0 {
@@ -162,10 +223,32 @@ func primeroEnCola(ColaEspera []string) string {
 	return ColaEspera[0]
 }
 
+/*
+func enqueue
+
+param: ColaEspera []string, element string
+
+return: []string
+
+Esta funcion agrega un elemento a una copia de una cola de espera y devuelve la nueva cola con el elemento
+agregado
+*/
+
 func enqueue(ColaEspera []string, element string) []string {
 	ColaEspera = append(ColaEspera, element)
 	return ColaEspera
 }
+
+/*
+func dequeue
+
+param: ColaEspera []string
+
+return: string, []string
+
+Esta funcion elimina el primer elemento de una copia decola y devuelve el elemento
+junto con la nueva cola cambiada
+*/
 
 func dequeue(ColaEspera []string) (string, []string) {
 	element := ColaEspera[0]
