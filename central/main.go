@@ -55,7 +55,8 @@ Esta funcion inicia el rabbit y recolecta los mensajes que van llegando por este
 */
 
 func rabbit() {
-	conn, err := amqp.Dial("amqp://test:test@localhost:5670/")
+	//conn, err := amqp.Dial("amqp://test:test@localhost:5670/")
+	conn, err := amqp.Dial("amqp://test:test@172.17.0.1:5670/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -260,7 +261,18 @@ func dequeue(ColaEspera []string) (string, []string) {
 	return element, ColaEspera[1:]
 }
 
+func myIP() string {
+	conn, error := net.Dial("udp", "8.8.8.8:80")
+	if error != nil {
+		fmt.Println(error)
+	}
+	defer conn.Close()
+	ipAddress := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	return ipAddress
+}
+
 func main() {
+	fmt.Println("WTF myip:", myIP())
 	go rabbit()
 	Termino = "0"
 	LabsConectados = 0

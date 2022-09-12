@@ -17,6 +17,7 @@ import (
 )
 
 var ipCentral string
+var ipRabbit string
 
 func myIP() string {
 	conn, error := net.Dial("udp", "8.8.8.8:80")
@@ -37,7 +38,7 @@ func centralIPValue() string {
 }
 
 func rabbit(nro_lab string) {
-	conn, err := amqp.Dial("amqp://test:test@" + ipCentral + ":5670/") //Escribir datos de la central
+	conn, err := amqp.Dial("amqp://test:test@" + ipRabbit + ":5670/") //Escribir datos de la central
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
@@ -100,7 +101,9 @@ func ComunicarseConCentral(client pb.CentralServiceClient, nro_lab string) {
 	stream, _ := client.AbrirComunicacion(context.Background())
 
 	//Mensaje de introduccion
+	fmt.Println("aqui<---------4")
 	stream.Send(&pb.SituacionResp{Resuelta: "NO LISTO", NroLab: nro_lab})
+	fmt.Println("aqui<---------5")
 
 	for {
 		//Calculo de Estallido
@@ -140,13 +143,15 @@ func failOnError(err error, msg string) {
 }
 
 func main() {
-	ipCentral = centralIPValue()
-
+	//ipCentral = centralIPValue()
+	ipRabbit = "172.17.0.1"
+	ipCentral = "172.17.0.3"
 	rand.Seed(time.Now().UnixNano()) // iniciar semilla
 
 	port_Central := "50051"
 
 	nro_lab := myIP()
+	fmt.Println("nro_lab:", nro_lab)
 
 	conn, err := grpc.Dial(ipCentral+":"+port_Central, grpc.WithInsecure())
 
@@ -156,9 +161,11 @@ func main() {
 
 	serviceClient := pb.NewCentralServiceClient(conn)
 
+	fmt.Println("aqui<---------1")
 	go ComunicarseConCentral(serviceClient, nro_lab)
-
+	fmt.Println("aqui<---------2")
 	stream, _ := serviceClient.Terminar(context.Background())
+	fmt.Println("aqui<---------3")
 	_, _ = stream.Recv() // Recibir senal de termino
 	fmt.Println("Llego senal de termino")
 	stream.Send(&pb.Termino{Termino: "1"}) // Enviar Confirmacion
